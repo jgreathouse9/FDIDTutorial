@@ -19,7 +19,6 @@ import pandas as pd
 from scipy.stats import norm
 import matplotlib.pyplot as plt
 import matplotlib
-import cvxpy as cp
 ```
 Strictly speaking, you don't need to import ```matplotlib```, I only do so because I am customizing my own graphics.
 ## Model Primitives
@@ -78,25 +77,12 @@ The user specifies the dataframe they wish to use, as well as the 4 columns I ju
 
         x1, x2 = np.mean(datax[:t1], axis=1).reshape(-1,
                                                      1), np.mean(datax[t1:t], axis=1).reshape(-1, 1)
-        # Define the variables to be optimized
-        constant = cp.Variable()
-        beta = cp.Variable()
-        constraint = [beta == 1]
 
-        # Define the constraint: beta should be equal to 1
-        # Define the objective function
-        objective = cp.Minimize(cp.sum_squares(y[:t1] - (constant + beta * x1)))
+        b_DID = np.mean(y[:t1] - x1, axis=0)  # DID intercept estimator
+        y1_DID = b_DID + x1  # DID in-sample-fit
+        y2_DID = b_DID + x2  # DID out-of-sample prediction
+        y_DID = np.vstack((y1_DID, y2_DID))  # Stack y1_DID and y2_DID vertically
 
-        # Define the problem with the constraint
-        problem = cp.Problem(objective, constraint)
-
-        # Solve the problem
-        problem.solve()
-
-        # Get the optimized values
-        constant_optimized = constant.value
-        # Calculate y_DID using vectorized operations
-        y_DID = constant_optimized + np.concatenate((x1, x2))
         y1_DID, y2_DID = y_DID[:t1], y_DID[t1:t]
 
         # DID ATT estimate and percentage
@@ -185,7 +171,7 @@ The user specifies the dataframe they wish to use, as well as the 4 columns I ju
         return DID_dict
 
 ```
-Naturally, the DID method is the main workhorse for the selection algorithm nad its Forward Selected variant. It uses convex optimization to estimate DID; to some this may seem odd. However, I think it provides a better understanding of what DID is *actually* doing under the hood, especially when estimated with OLS. DID is also a constrained form of OLS where we
+Naturally, the DID method is the main workhorse for the selection algorithm and its Forward Selected variant. It uses convex optimization to estimate DID; to some this may seem odd. However, I think it provides a better understanding of what DID is *actually* doing under the hood, especially when estimated with OLS. DID is also a constrained form of OLS where we
 
 ```math
 \begin{align*}
@@ -193,7 +179,7 @@ Naturally, the DID method is the main workhorse for the selection algorithm nad 
 &\text{subject to} \quad \delta_1 = 1
 \end{align*}
 ```
-As per the Augmented DD paper, we can think of DD in scalar form as a least-squares estimator $y_{0t}= \delta_1 + \delta_2\bar{y}_{jt}$ where $\bar{y}$ is the average of the control units. In other words, we seek the line which best fits the pre-intervention period of the treated unit, where the predictor is the average of the untreated units and its effect is constrained to be one plus some constant. This is what's meant above by the standard DD design not being robust to heterogeneous treatment effects, as in DD we constrain the effect of the average of the donors to be 1. Why? The parallel trends assumption. Under vanilla DID, we presume that an average, and only that average, is a suitable counterfactual, plus some constant. This is in contrast to the the Augmented DID method, where we do not make these constraints. Notice how both ADID and DID return model fit statistics and ATTs in dictionaries.
+As per the Augmented DD paper, we can think of DD in scalar form as a least-squares estimator $y_{0t}= \delta_1 + \delta_2\bar{y}_{jt}$ where $\bar{y}$ is the average of the control units. In other words, we seek the line which best fits the pre-intervention period of the treated unit, where the predictor is the average of the untreated units and its effect is constrained to be one plus some constant. This is what's meant above by the standard DD design not being robust to heterogeneous treatment effects, as in DD we constrain the effect of the average of the donors to be 1. Why? The parallel trends assumption. Under vanilla DID, we presume that an average, and only that average, is a suitable counterfactual, plus some constant. Strictly speaking, we could do this via optimization; however, I didn't want to run into sovler issues, so I kept the original code for DID. This is in contrast to the the Augmented DID method, where we do not make these constraints. Notice how both ADID and DID return model fit statistics and ATTs in dictionaries.
 ```python
   def AUGDID(self, datax, t, t1, t2, y, y1, y2):
     const = np.ones(t)      # t by 1 vector of ones (for intercept)
@@ -510,31 +496,13 @@ class FDID:
         x1, x2 = np.mean(datax[:t1], axis=1).reshape(-1, 1), np.mean(
             datax[t1:t], axis=1
         ).reshape(-1, 1)
-        # Define the variables to be optimized
+        x1, x2 = np.mean(datax[:t1], axis=1).reshape(-1,
+                                                     1), np.mean(datax[t1:t], axis=1).reshape(-1, 1)
+        b_DID = np.mean(y[:t1] - x1, axis=0)  # DID intercept estimator
+        y1_DID = b_DID + x1  # DID in-sample-fit
+        y2_DID = b_DID + x2  # DID out-of-sample prediction
+        y_DID = np.vstack((y1_DID, y2_DID))  # Stack y1_DID and y2_DID vertically
 
-        constant = cp.Variable()
-        beta = cp.Variable()
-        constraint = [beta == 1]
-
-        # Define the constraint: beta should be equal to 1
-        # Define the objective function
-
-        objective = cp.Minimize(cp.sum_squares(y[:t1] - (constant + beta * x1)))
-
-        # Define the problem with the constraint
-
-        problem = cp.Problem(objective, constraint)
-
-        # Solve the problem
-
-        problem.solve()
-
-        # Get the optimized values
-
-        constant_optimized = constant.value
-        # Calculate y_DID using vectorized operations
-
-        y_DID = constant_optimized + np.concatenate((x1, x2))
         y1_DID, y2_DID = y_DID[:t1], y_DID[t1:t]
 
         # DID ATT estimate and percentage
@@ -923,14 +891,14 @@ class FDID:
             )
             plt.grid(self.grid)
             plt.legend()
-            # plt.savefig(treated_unit_name + "MSCfigure." + self.filetype)
+            # plt.savefig(treated_unit_name + "FDIDfigure." + self.filetype)
 
             plt.show()
         return estimators_results
 ```
 </details>
 
-# Replicating the Study
+# Replicating Hsiao, Ching, Wan
 Here is an example of using the full thing. I begin by modifying my graphics to my liking.
 ```python
 # Matplotlib theme
@@ -983,6 +951,13 @@ column_names = [
     "China",
 ]
 
+df = pd.read_csv(
+    "https://raw.githubusercontent.com/leoyyang/rhcw/master/other/hcw-data.txt",
+    header=None,
+    delim_whitespace=True,
+)
+# Or , pd.read_csv(cw-data.txt", header=None, delim_whitespace=True)
+
 # Assign column names to the DataFrame
 
 df.columns = column_names
@@ -1013,6 +988,13 @@ model = FDID(df=df,
              counterfactual_color='#7DF9FF')
 estimators_results = model.fit()
 ```
-Here is our plot.
-![Sample Image](FDID_HK.png)
-We can also print the results we get in the ```estimators_results``` list, which returns the method relvant dictionaries
+<p align="center">
+  <img src="FDID_HK.png" alt="Alt Text" width="50%">
+</p>
+
+Here is our plot. We can also print the results we get in the `estimators_results` list, which returns the method relevant dictionaries:
+
+- FDID ATT: 0.025, Percent ATT: 53.843
+- DID ATT: 0.032, Percent ATT: 77.62
+- AUGDID ATT: 0.021, Percent ATT: 41.635
+
