@@ -997,4 +997,127 @@ Here is our plot. We can also print the results we get in the `estimators_result
 - FDID ATT: 0.025, Percent ATT: 53.843
 - DID ATT: 0.032, Percent ATT: 77.62
 - AUGDID ATT: 0.021, Percent ATT: 41.635
+# Replicating Ke and Hsaio 2020
+Let's do another example. This example replicates the findings of  [Ke and Hsiao 2020](https://doi.org/10.1002/jae.2871), which estimated the causal impact of Hubei's lockdown for COVID-19 on the economy, measured as Quarterly GDP. Note that here, I import the library from my **mlsynth** library, which houses FDID and other such synthetic control based estimators
+```python
+import requests
+from zipfile import ZipFile
+import pandas as pd
+from io import BytesIO
+from mlsynth import FDID
+import matplotlib.pyplot as plt
+import matplotlib
+# Matplotlib theme
+Jared_theme = {'axes.grid': True,
+               'grid.linestyle': '-',
+               'legend.framealpha': 1,
+               'legend.facecolor': 'white',
+               'legend.shadow': True,
+               'legend.fontsize': 16,
+               'legend.title_fontsize': 18,
+               'xtick.labelsize': 18,
+               'ytick.labelsize': 18,
+               'axes.labelsize': 18,
+               'axes.titlesize': 20,
+               'axes.facecolor': 'white',
+               'figure.dpi': 300,
+               'grid.color': 'black'}
 
+matplotlib.rcParams.update(Jared_theme)
+
+zip_url = "http://qed.econ.queensu.ca/jae/datasets/ke001/kh-data.zip"
+
+response = requests.get(zip_url)
+
+if response.status_code == 200:
+    # Extract the contents of the ZIP file
+    with ZipFile(BytesIO(response.content)) as zip_file:
+        file_name = zip_file.namelist()[0]
+
+        df = pd.read_csv(zip_file.open(file_name), delimiter="\t", header=None)  # Adjust delimiter if needed
+else:
+    print("Failed to fetch the ZIP file.")
+    
+cities = [
+    "Quarter", "Beijing", "Tianjin", "Hebei", "Shanxi", "Inner Mongolia", 
+    "Liaoning", "Jilin", "Heilongjiang", "Shanghai", "Jiangsu", 
+    "Zhejiang", "Anhui", "Fujian", "Jiangxi", "Shandong", 
+    "Henan", "Hubei", "Hunan", "Guangdong", "Guangxi", 
+    "Hainan", "Chongqing", "Sichuan", "Guizhou", "Yunnan", 
+    "Tibet", "Shaanxi", "Gansu", "Qinghai", "Ningxia", 
+    "Xinjiang"
+]
+
+columns_mapping = dict(zip(df.columns, cities))
+df.rename(columns=columns_mapping, inplace=True)
+
+# Assuming df is your DataFrame
+df = pd.melt(df, id_vars=["Quarter"], var_name="City", value_name="GDP Growth")
+
+df['Quarter'] = pd.to_datetime(df['Quarter'])
+
+df["Lockdown"] = ((df["Quarter"] > pd.to_datetime("2019-10-01")) & (df["City"].str.contains("Hubei"))).astype(int)
+
+df['Time'] = df.groupby(['City']).cumcount() + 1
+
+treat = "Lockdown"
+outcome = "GDP Growth"
+unitid = "City"
+time = "Time"
+
+
+
+
+model = FDID(df=df,
+             unitid=unitid,
+             time=time,
+             outcome=outcome,
+             treat=treat,
+             display_graphs=False, figsize=(12, 8),
+             counterfactual_color='#7DF9FF')
+final_list = model.fit()
+
+# Plotting observed values only once
+observed_values = None
+
+# Choose the methods you want to plot (e.g., 'DID' and 'FDID')
+methods_to_plot = ['DID', 'FDID']
+
+# Get unique values of "Quarter" sorted in order
+quarters = sorted(df['Quarter'].unique())
+
+# Set the figure size before the loop
+plt.figure(figsize=(12, 7))
+
+# Plotting observed values and units for selected methods
+for method_name in methods_to_plot:
+    method_data = [entry[method_name] for entry in final_list if method_name in entry]
+    if method_data:
+        method_data = method_data[0]  # Take the first occurrence if present
+
+        if observed_values is None:
+            observed_values = method_data['Vectors']['Observed Unit'].flatten()
+            plt.plot(quarters, observed_values, label='Observed Hubei', color='black')
+
+        unit_values = method_data['Vectors']['DID Unit'].flatten()
+        # Set color for FDID method
+        color = '#7DF9FF' if method_name == 'FDID' else 'red'
+
+        plt.plot(quarters, unit_values, label=f'{method_name} Unit', color=color)
+intervention_time = df[df["Lockdown"] == 1]["Quarter"].iloc[0]
+intervention_time_formatted = intervention_time.strftime('%YQ%m')
+
+plt.axvline(x=intervention_time, color='black', linestyle='--', label=f'Lockdown, {intervention_time_formatted}')
+
+plt.xlabel('Quarter')
+plt.ylabel('GDP')
+plt.legend()
+plt.title('Observed, FDID, and DID Hubei')
+plt.show()
+```
+Our results are
+- FDID ATT: -691.096, Percent ATT: -7.815
+- DID ATT: 447.525, Percent ATT: 5.808
+- AUGDID ATT: -314.138, Percent ATT: -3.71
+
+  These results are in line with some of the synthetic control estimatros from the library. For example, [Robust PCA SCM](https://arxiv.org/abs/2108.12542) has an ATT of -708, and an 8 percent negative impact on the economy, similar to the Factor Model Approach [by Li and Sonnier](https://doi.org/10.1177/00222437221137533 ) which finds a -664 ATT and a percentage decrease of 7.5. I should note that this is _not_ meant to be a formal comparison of these methods, which would actually be quite interesting. However, it _does_ illustrate the fact that the standard parallel trends assumption invoked in the classic DID design may not always hold, and doing so may lead to nonsensical results; here DID suggests that the lockdown improved the economy, which isn't a very sensible position to take. It is my hope that in making this public, that we can put more of these advnaced econometric methods to use, not simply because they're advanced, but because they improve policy analysis.
