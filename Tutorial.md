@@ -54,7 +54,7 @@ class FDID:
         self.filetype = filetype
         self.display_graphs = display_graphs
 ```
-The FDID class makes a few assumptions about ones data structure. Firstly, it presumes that the user has a long panel dataset of 4 columns, where we have one column for the outcomes, one column for the time, one column of unit names, and one column for the treatment indicator, which in this case is 0 for all periods untreated, and 1 for Hong Kong during the treatment period. 
+The FDID class makes a few assumptions about ones data structure. Firstly, it presumes that the user has a long panel dataset of 4 columns, where we have one column for the outcomes, one column for the time, one column of unit names, and one column for the treatment indicator, which in this case is 0 for all periods untreated, and 1 for Hong Kong during the treatment period. I will first go over DID, then AUGDID and the selection algorithm, as these are the main helper functions. Then I'll go into the ```fit``` method, the one users actually interact with.
 ```python
       Country     GDP  Time  Integration
 0   Hong Kong  0.0620     0            0
@@ -185,12 +185,188 @@ The user specifies the dataframe they wish to use, as well as the 4 columns I ju
         return DID_dict
 
 ```
-This method is the main workhorse for the selection algorithm. It uses convex optimization to estimate DID; to some this may seem odd. However, I think it provides a better understanding of what DID is actually doing under the hood. Traditionally, we think of it as 4 averages and 3 subtractions. However it is also OLS, a constrained form of OLS where we
+The DID method is the main workhorse for the selection algorithm. It uses convex optimization to estimate DID; to some this may seem odd. However, I think it provides a better understanding of what DID is actually doing under the hood. Traditionally, we think of it as 4 averages and 3 subtractions. However it is also OLS, a constrained form of OLS where we
 
 ```math
 \begin{align*}
-\text{minimize} \quad & \sum_{t=1}^{T_0} ||y_j - (\beta_0 + \boldsymbol{\beta} \cdot \mathbf{Y}_{\mathcal{N}_{0}||_{F}^2 \: \forall t \in \mathcal{T}_0 \\
-\text{subject to} \quad & \boldsymbol{\beta} = 1
+\min_{\delta_0} \quad &\left\| y_0 - (\delta_0 + \delta_1 \cdot \mathbf{Y}_{\mathcal{N}_0}) \right\|_F^2 \quad \forall t \in \mathcal{T}_0 \\
+&\text{subject to} \quad \delta_1 = 1
 \end{align*}
 ```
-As per the Augmented DD paper, we can think of DD in scalar form as a least-squares estimator $y_{0t}= \delta_1 + \delta_2\bar{y}_{jt}$ where $\bar{y}$ is the average of the control units. In other words, we seek the line which best fits the pre-intervention period of the treated unit, where the predictor is the average of the untreated units and its effect is constrained to be one plus some constant. This is what's meant above by the standard DD design not being robust to heterogeneous treatment effects, as in DD we constrain the effect
+As per the Augmented DD paper, we can think of DD in scalar form as a least-squares estimator $y_{0t}= \delta_1 + \delta_2\bar{y}_{jt}$ where $\bar{y}$ is the average of the control units. In other words, we seek the line which best fits the pre-intervention period of the treated unit, where the predictor is the average of the untreated units and its effect is constrained to be one plus some constant. This is what's meant above by the standard DD design not being robust to heterogeneous treatment effects, as in DD we constrain the effect of the average of the donors to be 1. Why? The parallel trends assumption. Under vanilla DID, we presume that an average, and only that average, is a suitable counterfactual, plus some constant. This is in contrast to the the Augmented DID method, where we do not make these constraints.
+```python
+    def AUGDID(self, datax, t, t1, t2, y, y1, y2):
+        const = np.ones(t)      # t by 1 vector of ones (for intercept)
+        # add an intercept to control unit data matrix, t by N (N=11)
+        x = np.column_stack([const, datax])
+        x1 = x[:t1, :]          # control units' pretreatment data matrix, t1 by N
+        x2 = x[t1:, :]          # control units' pretreatment data matrix, t2 by N
+
+        # ATT estimation by ADID method
+        x10 = datax[:t1, :]
+        x20 = datax[t1:, :]
+        x1_ADID = np.column_stack([np.ones(x10.shape[0]), np.mean(x10, axis=1)])
+        x2_ADID = np.column_stack([np.ones(x20.shape[0]), np.mean(x20, axis=1)])
+        # Define variables
+        b_ADID_cvx = cp.Variable(x1_ADID.shape[1])
+
+        # Define the problem
+        objective = cp.Minimize(cp.sum_squares(x1_ADID @ b_ADID_cvx - y1))
+        problem = cp.Problem(objective)
+
+        # Solve the problem
+        problem.solve()
+
+        # Extract the solution
+        b_ADID_optimized = b_ADID_cvx.value
+
+        # Compute in-sample fit
+        y1_ADID = x1_ADID @ b_ADID_optimized
+
+        # Compute prediction
+        y2_ADID = x2_ADID @ b_ADID_optimized
+
+        # Concatenate in-sample fit and prediction
+        y_ADID = np.concatenate([y1_ADID, y2_ADID])
+
+        ATT = np.mean(y2 - y2_ADID)  # ATT by ADID
+        ATT_per = 100 * ATT / np.mean(y2_ADID)  # ATT in percentage by ADID
+
+        e1_ADID = (
+            y1 - y1_ADID
+        )  # t1 by 1 vector of treatment unit's (pre-treatment) residuals
+        sigma2_ADID = np.mean(e1_ADID**2)  # \hat sigma^2_e
+
+        eta_ADID = np.mean(x2, axis=0).reshape(-1, 1)
+        psi_ADID = x1.T @ x1 / t1
+
+        Omega_1_ADID = (sigma2_ADID * eta_ADID.T) @ np.linalg.inv(psi_ADID) @ eta_ADID
+        Omega_2_ADID = sigma2_ADID
+
+        Omega_ADID = (t2 / t1) * Omega_1_ADID + Omega_2_ADID  # Variance
+
+        ATT_std = np.sqrt(t2) * ATT / np.sqrt(Omega_ADID)
+
+        alpha = 0.5
+        quantile = norm.ppf(1 - alpha)
+
+        lower_bound = ATT - quantile * np.sqrt(sigma2_ADID) / np.sqrt(t2)
+        upper_bound = ATT + quantile * np.sqrt(sigma2_ADID) / np.sqrt(t2)
+
+        RMSE = np.sqrt(np.mean((y1 - y1_ADID) ** 2))
+        RMSEPost = np.sqrt(np.mean((y2 - y2_ADID) ** 2))
+
+        R2_ADID = 1 - (np.mean((y1 - y1_ADID) ** 2)) / np.mean((y1 - np.mean(y1)) ** 2)
+
+        new_dd_dict = {
+            "ATT": ATT,
+            "T0 RMSE": RMSE,
+            "T1 RMSE": RMSEPost,
+            "Percent ATT": ATT_per,
+            "SATT": ATT_std[0, 0],
+            "R2": R2_ADID,
+        }
+
+        return new_dd_dict, y_ADID
+```
+Notice how both methods return model fit statistics and ATTs in dictionaries. Here is the selection algorithm.
+```python
+    def selector(self, no_control, t1, t, y, y1, y2, datax, control_ID, df):
+        R2 = np.zeros(no_control)
+        R2final = np.zeros(no_control)
+        control_ID_adjusted = np.array(control_ID) - 1
+        select_c = np.zeros(no_control, dtype=int)
+
+        for j in range(no_control):
+            ResultDict = self.DID(y.reshape(-1, 1), datax[:t, j].reshape(-1, 1), t1)
+            R2[j] = ResultDict["Fit"]["R-Squared"]
+        R2final[0] = np.max(R2)
+        first_c = np.argmax(R2)
+        select_c[0] = control_ID_adjusted[first_c]
+
+        for k in range(2, no_control + 1):
+            left = np.setdiff1d(control_ID_adjusted, select_c[: k - 1])
+            control_left = datax[:, left]
+            R2 = np.zeros(len(left))
+
+            for jj in range(len(left)):
+                combined_control = np.concatenate(
+                    (
+                        datax[:t1, np.concatenate((select_c[: k - 1], [left[jj]]))],
+                        datax[t1:t, np.concatenate((select_c[: k - 1], [left[jj]]))]
+                    ),
+                    axis=0
+                )
+                ResultDict = self.DID(y.reshape(-1, 1), combined_control, t1)
+                R2[jj] = ResultDict["Fit"]["R-Squared"]
+
+            R2final[k - 1] = np.max(R2)
+            select = left[np.argmax(R2)]
+            select_c[k - 1] = select
+        selected_unit_names = [df.columns[i] for i in select_c]
+
+        return select_c, R2final
+```
+Here is the forward selection algorithm. It follows the procedure described above to select the control group from the universe of controls. It takes as inputs the number of pre-intervention periods, post-periods and total time periods, as well as the treatment vector and the donor matrix. It also prints the names of the optimal control units. Now, is the estimation for the Forward DD
+```python
+    def est(self, control, t, t1, t2, y, y1, y2, datax):
+
+        x1_forward_DID = np.mean(control[:t1, :], axis=1)
+        x2_forward_DID = np.mean(control[t1:t, :], axis=1)
+        beta_forward_DID = np.mean(y1 - x1_forward_DID)
+
+        y1_hat_forward_DID = beta_forward_DID + x1_forward_DID
+        y2_hat_forward_DID = beta_forward_DID + x2_forward_DID
+
+        y_FDID = np.hstack((y1_hat_forward_DID, y2_hat_forward_DID))
+
+        ATT_FDID = np.mean(y2 - y2_hat_forward_DID)
+        ATT_FDID_per = 100 * ATT_FDID / np.mean(y2_hat_forward_DID)
+
+        R2_forward_DID = 1 - (np.mean((y1 - y1_hat_forward_DID) ** 2)) / np.mean(
+            (y1 - np.mean(y1)) ** 2
+        )
+
+        u1_FDID = y1 - y1_hat_forward_DID
+        Omega_1_hat_FDID = (t2 / t1) * np.mean(u1_FDID**2)
+        Omega_2_hat_FDID = np.mean(u1_FDID**2)
+        std_Omega_hat_FDID = np.sqrt(Omega_1_hat_FDID + Omega_2_hat_FDID)
+
+        ATT_std_FDID = np.sqrt(t2) * ATT_FDID / std_Omega_hat_FDID
+
+        # Standardized ATT, assuming H0: ATT = 0
+
+        p_value_forward_DID = 2 * (1 - norm.cdf(np.abs(ATT_std_FDID)))
+
+        # P-value for a 1-sided test
+
+        p_value_f_one_sided = 1 - norm.cdf(ATT_std_FDID)
+
+        # 95% Confidence Interval for FDID ATT estimate
+
+        z_critical = norm.ppf(0.975)  # 1.96 for a two-tailed test
+        CI_95_FDID_left = ATT_FDID - z_critical * std_Omega_hat_FDID / np.sqrt(t2)
+        CI_95_FDID_right = ATT_FDID + z_critical * std_Omega_hat_FDID / np.sqrt(t2)
+        CI_95_FDID_width = [
+            CI_95_FDID_left,
+            CI_95_FDID_right,
+            CI_95_FDID_right - CI_95_FDID_left,
+        ]
+
+        DID_dict = self.DID(y.reshape(-1, 1), datax, t1)
+
+        FDID_dict = {
+            "ATT": ATT_FDID,
+            "Percent ATT": ATT_FDID_per,
+            "R2": R2_forward_DID,
+            "SATT": ATT_std_FDID,
+            "T0 RMSE": np.sqrt(np.mean((y1 - y1_hat_forward_DID) ** 2)),
+            # Add more metrics to the dictionary as needed
+        }
+
+        AUGDID_dict, y_ADID = self.AUGDID(datax, t, t1, t2, y, y1, y2)
+        time_points = np.arange(1, len(y) + 1)
+
+        return FDID_dict, DID_dict, AUGDID_dict, y_FDID
+```
+Notice how it returns the relevant dictionaries of fit and effect size estimates.
