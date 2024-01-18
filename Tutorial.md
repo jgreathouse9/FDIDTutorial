@@ -1013,5 +1013,6 @@ model = FDID(df=df,
              counterfactual_color='#7DF9FF')
 estimators_results = model.fit()
 ```
-Now, this is the graph we end up getting.
+Here is our plot.
 ![Sample Image](FDID_HK.png)
+We can also print the results we get in the ```estimators_results``` list, which returns the method relvant dictionaries
