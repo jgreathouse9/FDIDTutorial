@@ -1014,3 +1014,4 @@ model = FDID(df=df,
 estimators_results = model.fit()
 ```
 Now, this is the graph we end up getting.
+![Sample Image](FDID_HK.png)
