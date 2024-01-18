@@ -929,6 +929,8 @@ class FDID:
         return estimators_results
 ```
 </details>
+
+# Replicating the Study
 Here is an example of using the full thing. I begin by modifying my graphics to my liking.
 ```python
 # Matplotlib theme
