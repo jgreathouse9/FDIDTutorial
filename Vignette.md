@@ -1118,9 +1118,9 @@ plt.show()
 <p align="center">
   <img src="HubeiPlot.png" alt="Alt Text" width="50%">
 </p>
-Our results are
+
 - FDID ATT: -691.096, Percent ATT: -7.815
 - DID ATT: 447.525, Percent ATT: 5.808
 - AUGDID ATT: -314.138, Percent ATT: -3.71
 
-  These results are in line with some of the synthetic control estimatros from the library. For example, [Robust PCA SCM](https://arxiv.org/abs/2108.12542) has an ATT of -708, and an 8 percent negative impact on the economy, similar to the Factor Model Approach [by Li and Sonnier](https://doi.org/10.1177/00222437221137533 ) which finds a -664 ATT and a percentage decrease of 7.5. I should note that this is _not_ meant to be a formal comparison of these methods, which would actually be quite interesting. However, it _does_ illustrate the fact that the standard parallel trends assumption invoked in the classic DID design may not always hold, and doing so may lead to nonsensical results; here DID suggests that the lockdown improved the economy, which isn't a very sensible position to take. It is my hope that in making this public, that we can put more of these advnaced econometric methods to use, not simply because they're advanced, but because they improve policy analysis.
+These results are in line with some of the synthetic control estimatros from the library. For example, [Robust PCA SCM](https://arxiv.org/abs/2108.12542) has an ATT of -708, and an 8 percent negative impact on the economy, similar to the Factor Model Approach [by Li and Sonnier](https://doi.org/10.1177/00222437221137533 ) which finds a -664 ATT and a percentage decrease of 7.5. I should note that this is _not_ meant to be a formal comparison of these methods, which would actually be quite interesting. However, it _does_ illustrate the fact that the standard parallel trends assumption invoked in the classic DID design may not always hold, and doing so may lead to nonsensical results; here DID suggests that the lockdown improved the economy, which isn't a very sensible position to take. It is my hope that in making this public, that we can put more of these advnaced econometric methods to use, not simply because they're advanced, but because they improve policy analysis.
