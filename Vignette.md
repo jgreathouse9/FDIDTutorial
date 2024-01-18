@@ -1115,6 +1115,9 @@ plt.legend()
 plt.title('Observed, FDID, and DID Hubei')
 plt.show()
 ```
+<p align="center">
+  <img src="HubeiPlot.png" alt="Alt Text" width="50%">
+</p>
 Our results are
 - FDID ATT: -691.096, Percent ATT: -7.815
 - DID ATT: 447.525, Percent ATT: 5.808
