@@ -22,12 +22,17 @@ import matplotlib
 ```
 Strictly speaking, you don't need to import ```matplotlib```, I only do so because I am customizing my own graphics.
 ## Model Primitives
-Before I continue, I introduce potential outcomes. The basic problem of causal inference however is that time moves forward-- we cannot go into the past and see how Hong Kong or Hubei's GDP would have evolved absent their respective interventions. Thus, we observe $y_{jt} = d_{jt} y_{jt}^1 + (1 - d_{jt}) y_{jt}^0$ where $d \in \[0,1\]$ is a dummy variable indicating treatment otr coltrol status. Here, we have units indexed to $j$ across $t \in \left(1, T\right) \cap \mathbb{N}$ time periods, where $T_0$ is the point the intervention begins at. Here, $j=0$ is our treated unit, leaving us with $1 \ldots N$ control units. $y_{jt}^1$ and $y_{jt}^0$ respectively are the outcomes we would observe if a given unit $j$ is treated at time $t$. However for Hong Kong and Hubei, we never observe $y_{jt}^0$ while $t \ge T_0$, we only observe its outcomes under treatment or not while $t< T_0$. Fundamentally, the DID estimator is valid based on the parallel trends assumption. The classic parallel trends assumption posits the post-intervention trend of our treated unit would be parallel to the average of the control group $\mathcal{N}_0$ ansent the intervention. Practically speaking, this has a few implications: firstly, no heterogeneous treatment effects. Parallel trends posits that the average, and the average only, of our controls is a sufficient proxy for our coutnerfactual Hong Kong or Hubei. As a corollary, this means that all of our control units are actually similar enough to Hong Kong on observed and unobserved factors to serve as proxy counterfactual. In other words, this means we ideally would have no outliers or units that are too different from either treated unit. However in practive, this is rarely the case. There are 195 national economies in the world and 33 other provincial economies in China; presumably, most of them would not be sufficient comparison units for Hong Kong or Hubei.
+Before I continue, I introduce potential outcomes. The basic problem of causal inference however is that time moves forward-- we cannot go into the past and see how Hong Kong or Hubei's GDP would have evolved absent their respective interventions. Thus, we observe $y_{jt} = d_{jt} y_{jt}^1 + (1 - d_{jt}) y_{jt}^0$ where $d \in \[0,1\]$ is a dummy variable indicating treatment otr coltrol status. Here, we have units indexed to $j$ across $t \in \left(1, T\right) \cap \mathbb{N}$ time periods, where $T_0$ is the point the intervention begins at. Here, $j=0$ is our treated unit, leaving us with $1 \ldots N$ control units. $y_{jt}^1$ and $y_{jt}^0$ respectively are the outcomes we would observe if a given unit $j$ is treated at time $t$. However for Hong Kong and Hubei, we never observe $y_{jt}^0$ while $t \ge T_0$, we only observe its outcomes under treatment or not while $t< T_0$. Fundamentally, the DID estimator is valid based on the parallel trends assumption. The classic parallel trends assumption posits the post-intervention trend of our treated unit would be parallel to the average of the control group $\mathcal{N}_0$ ansent the intervention. Practically speaking, this has a few implications: firstly, no heterogeneous treatment effects. Parallel trends posits that the average, and the average only, of our controls is a sufficient proxy for our coutnerfactual Hong Kong or Hubei. As a corollary, this means that all of our control units are actually similar enough to Hong Kong on observed and unobserved factors to serve as proxy counterfactual. In other words, this means we ideally would have no outliers or units that are too different from either treated unit. However in practive, this is rarely the case. There are 195 national economies in the world and many other cities in China; presumably, most of them would not be sufficient comparison units for Hong Kong or Hubei. However, parallel trends is precisely that: an assumption that we make. We cannot demonstrate it to be true, only give a better argument for it.
+<p align="center">
+  <img src="HubeivsAverage.png" alt="Alt Text" width="50%">
+</p>
 
-More pressingly
+For example, consider the plot above. Here, we plot the trends of Hubei versus the other 30 control untis. The trends actually do appear pretty similar for the first few years. Howwever Hubei's economy grows consistently at a quicker rate, especially after the year 2017. So, it may not be the case that the average of the other controls are all suitable control units for Hubei.
 ## Introducing Forward Selection
-Hence, it's useful to have an algorithm which can formally select the optimal set of control units for a given treated unit. Here, we use the forward selection method. In FDID, we take the full pool of control units outcomes for $t< T_0$ and iteratively use each control unit to predict, via OLS, $t< T_0$ outcomes of the treated unit. We then store the model which has the highest $R^2$ statistic. For example, if we have Los Angeles, New York City, Chicago, and Miami as controls and Los Angeles has the higest $R^2$, we store Los Angeles as the first selected unit. Then, we predict the pre-intervention outcomes for the treated unit using Los Angeles, looping through the other unselected control units. If NYC and Los Angeles have the highest $R^2$, we then add NYC to the selected pool. Then, we estimate DID with these two control units, and calculate its $R^2$ statistic. Then we keep going, until we estimate And so on, until we estimate the sum of $1 \ldots N$ models. After we've done so, we then keep whichever selected model that has the highest $R^2$ statistic. Intuitively, this is an improvement over the standard average: if the average of control does not provide a good approximation fro our treated unit, then using some subset of the controls must perform at least as well. The final pool of control units is the final DID model we estimate. Now that we have the basics out of the way, we can finally go over the actual Python class.
+Hence, it's useful to have an algorithm which can formally select the optimal set of control units for a given treated unit. Filtering out 'bad' control units is one way to make the parallel trends assumption more plausible. Here, we use the forward selection method. In FDID, we take the full pool of control units outcomes for $t< T_0$ and iteratively use each control unit to predict, via OLS, the pre-intervenion outcomes of the treated unit. We then store the model which has the highest $R^2$ statistic. For example, say our treated unit is Washington DC and we have Los Angeles, New York City, Chicago, and Miami as controls. If Los Angeles has the higest $R^2$, we store Los Angeles as the first selected unit. Then, we predict the pre-intervention outcomes for the treated unit using Los Angeles, looping through the other unselected control units. If the model that has NYC and Los Angeles has the highest $R^2$, we then add NYC to the selected pool. Then, we estimate DID with these two control units, and calculate its $R^2$ statistic. And so on, until we estimate the sum of $1 \ldots N$ models. After we've done so, we then keep whichever selected DID model that has the highest $R^2$ statistic. Intuitively, this is an improvement over the standard average: if the average of all controls does not provide a good approximation for our treated unit, then using some subset of the controls must perform _at least_ as well. The final pool of control units, termed $\hat{\mathcal U}$ in the Forward DID paper, is the final control group that we use. Now that we have the basics out of the way, we can finally go over the actual Python class.
 # Forward Selection Differences in Differences
+## The Class Inputs
+Here are the inputs the user may specify.
 ```python
 class FDID:
     def __init__(self, df, unitid, time, outcome, treat,
@@ -53,7 +58,9 @@ class FDID:
         self.filetype = filetype
         self.display_graphs = display_graphs
 ```
-The FDID class makes a few assumptions about ones data structure. Firstly, it presumes that the user has a long panel dataset of 4 columns, where we have one column for the outcomes, one column for the time, one column of unit names, and one column for the treatment indicator, which in this case is 0 for all periods untreated, and 1 for Hong Kong during the treatment period. I will first go over DID, then AUGDID and the selection algorithm, as these are the main helper functions. Then I'll go into the ```fit``` method, the one users actually interact with.
+The user specifies the dataframe they wish to use, as well as the 4 columns I just mentioned. The user may also customize, should they specify to see graphs, the colors of the trend lines for the observed and FDID predictions.
+
+The FDID class makes a few assumptions about ones data structure. Firstly, it presumes that the user has a long panel dataset of 4 columns, where we have one column for the outcomes, one column for the time, one column of unit names, and one column for the treatment indicator, which in this case is 0 for all periods untreated, and 1 for the treated unit during the treatment period. The code does not do so now, but in future iterations it will test to see that all of these are true.
 ```python
       Country     GDP  Time  Integration
 0   Hong Kong  0.0620     0            0
@@ -70,7 +77,8 @@ The FDID class makes a few assumptions about ones data structure. Firstly, it pr
 
 [1525 rows x 4 columns]
 ```
-The user specifies the dataframe they wish to use, as well as the 4 columns I just mentioned. The user may also customize, should they specify to see graphs, the colors of the trend lines for the observed and FDID predictions.
+## Vanilla DID
+Here is the DID method.
 ```python
     def DID(self, y, datax, t1):
         t = len(y)
@@ -171,15 +179,15 @@ The user specifies the dataframe they wish to use, as well as the 4 columns I ju
         return DID_dict
 
 ```
-Naturally, the DID method is the main workhorse for the selection algorithm and its Forward Selected variant. It uses convex optimization to estimate DID; to some this may seem odd. However, I think it provides a better understanding of what DID is *actually* doing under the hood, especially when estimated with OLS. DID is also a constrained form of OLS where we
-
+DID is naturally the main workhorse for the selection algorithm. While I do not estimate it like this, DID is a constrained form of OLS where we
 ```math
 \begin{align*}
 \min_{\delta_0} \quad &\left\| y_0 - (\delta_0 + \delta_1 \cdot \mathbf{Y}_{\mathcal{N}_0}) \right\|_F^2 \quad \forall t \in \mathcal{T}_0 \\
 &\text{subject to} \quad \delta_1 = 1
 \end{align*}
 ```
-As per the Augmented DD paper, we can think of DD in scalar form as a least-squares estimator $y_{0t}= \delta_1 + \delta_2\bar{y}_{jt}$ where $\bar{y}$ is the average of the control units. In other words, we seek the line which best fits the pre-intervention period of the treated unit, where the predictor is the average of the untreated units and its effect is constrained to be one plus some constant. This is what's meant above by the standard DD design not being robust to heterogeneous treatment effects, as in DD we constrain the effect of the average of the donors to be 1. Why? The parallel trends assumption. Under vanilla DID, we presume that an average, and only that average, is a suitable counterfactual, plus some constant. Strictly speaking, we could do this via optimization; however, I didn't want to run into sovler issues, so I kept the original code for DID. This is in contrast to the the Augmented DID method, where we do not make these constraints. Notice how both ADID and DID return model fit statistics and ATTs in dictionaries.
+As per the Augmented DD paper, DD is a least-squares estimator $y_{0t}= \delta_1 + \delta_2\bar{y}_{jt}$ where $\bar{y}$ is the average of the control units. In other words, we seek the line which best fits the pre-intervention period of the treated unit, where the predictor is the average of the untreated units and its effect is constrained to be one (or, the pure average of controls) plus some constant. This is what's meant above by the standard DD design not being robust to heterogeneous treatment effects. Why? The parallel trends assumption of DID. Under vanilla DID, we presume that an average, and **only** that average, is a suitable counterfactual, plus some constant. This is in contrast to the the Augmented DID method, where we do not make these constraints. For AUGDID, the parallel trend assumption is that the counterfactual would be the pure average of controls plus some slope adjusted constant. Notice how both ADID and DID return model fit statistics and ATTs in dictionaries.
+## Augmented DID
 ```python
   def AUGDID(self, datax, t, t1, t2, y, y1, y2):
     const = np.ones(t)      # t by 1 vector of ones (for intercept)
@@ -290,20 +298,26 @@ As per the Augmented DD paper, we can think of DD in scalar form as a least-squa
 
     return ADID_dict, y_ADID
 ```
-The ADID method differs from the DID method in that the constraint on $\delta_2$ is not constrained to be one; therefore, our parallel trends assumption is that our target unit absent the intervention would moved parallel to the average of the controls plus some slope-adjsuted constant. Here is the selection algorithm for FDID.
+## Forward Selection
+Here is the selection algorithm for FDID.
 ```python
     def selector(self, no_control, t1, t, y, y1, y2, datax, control_ID, df):
-        R2 = np.zeros(no_control)
+        R2 = np.zeros(no_control) # Creates an empty vector equal in length to the number of controls
         R2final = np.zeros(no_control)
-        control_ID_adjusted = np.array(control_ID) - 1
+        control_ID_adjusted = np.array(control_ID) - 1 # Adjusts the indexing from MATLAB
+
         select_c = np.zeros(no_control, dtype=int)
 
         for j in range(no_control):
+            # Over the jth control unit, estimate DID and save its R-squared stat
+
             ResultDict = self.DID(y.reshape(-1, 1), datax[:t, j].reshape(-1, 1), t1)
+
             R2[j] = ResultDict["Fit"]["R-Squared"]
-        R2final[0] = np.max(R2)
+
+        R2final[0] = np.max(R2) # The model with the highest R-Squared
         first_c = np.argmax(R2)
-        select_c[0] = control_ID_adjusted[first_c]
+        select_c[0] = control_ID_adjusted[first_c] # The selected unit
 
         for k in range(2, no_control + 1):
             left = np.setdiff1d(control_ID_adjusted, select_c[: k - 1])
@@ -328,7 +342,8 @@ The ADID method differs from the DID method in that the constraint on $\delta_2$
 
         return select_c, R2final
 ```
-Here is the forward selection algorithm. It follows the procedure described above to select the control group from the universe of controls. It takes as inputs the number of pre-intervention periods, post-periods and total time periods, as well as the treatment vector and the donor matrix. It also prints the names of the optimal control units. Now, is the estimation for the Forward DD
+Here is the forward selection algorithm. It follows the procedure described above to select the control group from the universe of controls. It takes as inputs the number of pre-intervention periods, post-periods and total time periods, as well as the treatment vector and the donor matrix. It also prints the names of the optimal control units.
+## Forward DID
 ```python
     def est(self, control, t, t1, t2, y, y1, y2, datax):
 
@@ -343,7 +358,8 @@ Here is the forward selection algorithm. It follows the procedure described abov
 
         return FDID_dict, DID_dict, AUGDID_dict, y_FDID
 ```
-Notice how it returns the relevant dictionaries of fit and effect size estimates. With the helper functions described, we can now go into the main function that the user needs to work with, the ```.fit``` method.
+Notice how it returns the relevant dictionaries of fit and effect size estimates across all designs (AUGDID, DID and FDID). With the helper functions described, we can now go into the main function that the user needs to work with, the ```.fit``` method.
+## Fitting FDID
 <details>
   <summary>Click to expand/collapse</summary>
   
@@ -453,7 +469,7 @@ def fit(self):
 ```
 </details>
 
-The first step is is to reshape our data to wide, such that the columns are each unit in our dataframe and each row is a time period. We then extract the name of the treated unit. We then refer to the column in the wide dataset with the name of the treated unit, and eaxtract its $T \times 1$ vector. We then construct a dataframe of all the columns that are not the treated unit, and convert it to a matrix, where the shape of the donor matrix refers to the number of control units, arranging these into a $1 \ldots N$ index. Then, we get the number of time periods, represented by the length of the y vector. We get the number of pre-intervention periods based on the number of periods where the treatment variable is 0 and the unit name column is the name of the treated unit. From there, we simply use the already discussed functions to select the control units and estimate Forward and Augmented DID. We then put all of these into one dictionary so that we may conveniently refer to them for reporting.
+The first step is is to reshape our data to wide, such that the columns are each unit in our dataframe and each row is a time period. We then extract the name of the treated unit. We then refer to the column in the wide dataset with the name of the treated unit, and extract its $T \times 1$ vector. We then construct a dataframe of all the columns that are not the treated unit, and convert it to a matrix, where the shape of the donor matrix refers to the number of control units, arranging these into a $1 \ldots N$ index. Then, we get the number of time periods, represented by the length of the y vector. We get the number of pre-intervention periods based on the number of periods where the treatment variable is 0 and the unit name column is the name of the treated unit. From there, we simply use the already discussed functions to select the control units and estimate Forward and Augmented DID.
 
 With all this in mind, here is the complete class.
 <details>
@@ -919,7 +935,7 @@ Jared_theme = {'axes.grid': True,
 
 matplotlib.rcParams.update(Jared_theme)
 ```
-Now I import the dataframe (which you may also access in this repo) and do the reelvant cleaning.
+Now I import the dataframe (which you may also access in this repo) and do the relvant cleaning.
 ```python
 # Define column names
 
@@ -997,8 +1013,9 @@ Here is our plot. We can also print the results we get in the `estimators_result
 - FDID ATT: 0.025, Percent ATT: 53.843
 - DID ATT: 0.032, Percent ATT: 77.62
 - AUGDID ATT: 0.021, Percent ATT: 41.635
+With these effect sizes, we can see how the method we use affects the $ATT$ we estimate. DID estimates a giant effect size, whereas FDID estimate much smaller effects. In terms of the restrictiveness of their assumptions, DID is the most strict, followed by FDID and AUGDID.
 # Replicating Ke and Hsaio 2020
-Let's do another example. This example replicates the findings of  [Ke and Hsiao 2020](https://doi.org/10.1002/jae.2871), which estimated the causal impact of Hubei's lockdown for COVID-19 on the economy, measured as Quarterly GDP. Note that here, I import the library from my **mlsynth** library, which houses FDID and other such synthetic control based estimators
+Let's do another example, though. This example replicates the findings of  [Ke and Hsiao 2020](https://doi.org/10.1002/jae.2871), which estimated the causal impact of Hubei's lockdown for COVID-19 on the economy, measured as Quarterly GDP. Note that here, I import the library from my **mlsynth** library, which houses FDID and other synthetic control based estimators. It is still under development, which is why it is not posted here, however the syntax for FDID remains the same.
 ```python
 import requests
 from zipfile import ZipFile
@@ -1036,8 +1053,9 @@ if response.status_code == 200:
 
         df = pd.read_csv(zip_file.open(file_name), delimiter="\t", header=None)  # Adjust delimiter if needed
 else:
-    print("Failed to fetch the ZIP file.")
-    
+    print("The zip file does not exist.")
+
+# Here are our city names.    
 cities = [
     "Quarter", "Beijing", "Tianjin", "Hebei", "Shanxi", "Inner Mongolia", 
     "Liaoning", "Jilin", "Heilongjiang", "Shanghai", "Jiangsu", 
@@ -1051,7 +1069,6 @@ cities = [
 columns_mapping = dict(zip(df.columns, cities))
 df.rename(columns=columns_mapping, inplace=True)
 
-# Assuming df is your DataFrame
 df = pd.melt(df, id_vars=["Quarter"], var_name="City", value_name="GDP Growth")
 
 df['Quarter'] = pd.to_datetime(df['Quarter'])
@@ -1065,9 +1082,6 @@ outcome = "GDP Growth"
 unitid = "City"
 time = "Time"
 
-
-
-
 model = FDID(df=df,
              unitid=unitid,
              time=time,
@@ -1080,7 +1094,6 @@ final_list = model.fit()
 # Plotting observed values only once
 observed_values = None
 
-# Choose the methods you want to plot (e.g., 'DID' and 'FDID')
 methods_to_plot = ['DID', 'FDID']
 
 # Get unique values of "Quarter" sorted in order
@@ -1123,4 +1136,10 @@ plt.show()
 - DID ATT: 447.525, Percent ATT: 5.808
 - AUGDID ATT: -314.138, Percent ATT: -3.71
 
-These results are in line with some of the synthetic control estimatros from the library. For example, [Robust PCA SCM](https://arxiv.org/abs/2108.12542) has an ATT of -708, and an 8 percent negative impact on the economy, similar to the Factor Model Approach [by Li and Sonnier](https://doi.org/10.1177/00222437221137533 ) which finds a -664 ATT and a percentage decrease of 7.5. I should note that this is _not_ meant to be a formal comparison of these methods, which would actually be quite interesting. However, it _does_ illustrate the fact that the standard parallel trends assumption invoked in the classic DID design may not always hold, and doing so may lead to nonsensical results; here DID suggests that the lockdown improved the economy, which isn't a very sensible position to take. It is my hope that in making this public, that we can put more of these advnaced econometric methods to use, not simply because they're advanced, but because they improve policy analysis.
+These results are in line with some of the synthetic control estimatros from the **mlsynth** library. For example, [Robust PCA SCM](https://arxiv.org/abs/2108.12542) has an ATT of -708, and an 8 percent negative impact on the economy, similar to the Factor Model Approach [by Li and Sonnier](https://doi.org/10.1177/00222437221137533) which finds a -664 ATT and a percentage decrease of 7.5. I should note that this is _not_ meant to be a formal comparison of these methods, which would actually be quite interesting. However, it _does_ illustrate the fact that the standard parallel trends assumption invoked in the classic DID design may not always hold, and doing so may lead to nonsensical results; here DID suggests that the lockdown improved the economy, which isn't a very sensible position to take.
+
+It is my hope that in making my code public we can put more of these advanced econometric methods to use for real policy analysis. The benefit is not simply because they're advanced, but because they improve the accuracy of our estimates with a few simple adjustments to standard econometric techniques. This is an ongoing project; any feedback or comments are most welcome!
+
+# Contact
+- [Jared Greathouse](jgreathouse3@student.gsu.edu)
+- [Kathy Li](kathleen.li@mccombs.utexas.edu)
