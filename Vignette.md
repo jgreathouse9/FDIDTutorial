@@ -1,7 +1,7 @@
 A Tutorial on Forward and Augmented Difference-in-Differences 
 ==============
 
-***Revisiting Hong Kong's Economic Integration***
+***Revisiting Hong Kong's Economic Integration and Hubei's Lockdown***
 
 **Author:** *Jared Greathouse*
 <!-- 
