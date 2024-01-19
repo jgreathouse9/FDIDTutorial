@@ -4,10 +4,7 @@ A Tutorial on Forward and Augmented Difference-in-Differences
 ***Revisiting Hong Kong's Economic Integration and Hubei's Lockdown***
 
 **Author:** *Jared Greathouse*
-<!-- 
-  Code to Justify Text
 
--->
 # Introduction
 This tutorial uses publicly available data to demonstrate the utility of the [Forward](https://doi.org/10.1287/mksc.2022.0212) and [Augmented](https://doi.org/10.1287/mksc.2022.1406) Difference-in-Differences estimators. It is based on the MATLAB code very kindly provided by [Kathleen Li](https://sites.utexas.edu/kathleenli/).
 
