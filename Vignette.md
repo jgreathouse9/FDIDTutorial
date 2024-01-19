@@ -1051,7 +1051,8 @@ if response.status_code == 200:
     with ZipFile(BytesIO(response.content)) as zip_file:
         file_name = zip_file.namelist()[0]
 
-        df = pd.read_csv(zip_file.open(file_name), delimiter="\t", header=None)  # Adjust delimiter if needed
+        df = pd.read_csv(zip_file.open(file_name), delimiter="\t", header=None)
+        # or, pd.read_csv('kh-data.txt', delimiter="\t", header=None)
 else:
     print("The zip file does not exist.")
 
