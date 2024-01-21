@@ -846,13 +846,15 @@ class FDID:
             no_control, t1, t, y, y1, y2, datax, control_ID, Ywide
         )
         selected_control_indices = control_order[: R2_final.argmax() + 1]
-        selected_control_names = [Ywide.columns[i] for i in selected_control_indices]
+        copy_wide_copy = Ywide.iloc[:, 1:].copy()
+        selected_controls = [copy_wide_copy.columns[i] for i in selected_control_indices]
+
         control = datax[:, control_order[: R2_final.argmax() + 1]]
 
         FDID_dict, DID_dict, AUGDID_dict, y_FDID = self.est(
             control, t, t1, t - t1, y, y1, y2, datax
         )
-
+        FDID_dict['Selected Units'] = selected_controls
         estimators_results = []
         estimators_results.append({"FDID": FDID_dict})
         # Append the normal DID dictionary to the list
@@ -1047,7 +1049,7 @@ estimators_results = model.fit()
   <img src="FDID_HK.png" alt="Alt Text" width="50%">
 </p>
 
-Here is our plot. We can also print the results we get in the `estimators_results` list, which returns the method relevant dictionaries:
+Here is our plot. We can also print the results we get in the `estimators_results` list, which returns the method relevant dictionaries, ```FDID``` selects Philippines, Singapore, Thailand, Norway, Mexico, Korea, Indonesia, New Zealand, Malaysia as the optimal control group.
 
 - FDID ATT: 0.025, Percent ATT: 53.843
 - DID ATT: 0.032, Percent ATT: 77.62
@@ -1171,6 +1173,10 @@ plt.ylabel('GDP')
 plt.legend()
 plt.title('Observed, FDID, and DID Hubei')
 plt.show()
+
+fdid_selected_units = [item['FDID']['Selected Units'] for item in final_list if 'FDID' in item]
+print("Selected Units:", fdid_selected_units)
+
 ```
 <p align="center">
   <img src="HubeiPlot.png" alt="Alt Text" width="50%">
@@ -1180,7 +1186,7 @@ plt.show()
 - DID ATT: 447.525, Percent ATT: 5.808
 - AUGDID ATT: -314.138, Percent ATT: -3.71
 
-Already, we can see how ```FDID``` vastly improves upon the pre-intervention fit of standard DID. Using a control group that is much more similar to Hubei in the pre-2020 period allows the trends to match much more than a naive average and an intercept would. Note however the FDID has a PTA of its own, a much more realistic one. To directly quote the FDID paper,
+```FDID``` has Anhui, Zhejiang, Beijing, Fujian, Henan, Hunan, Jiangsu, and Yunnan as the optimal controls. Already, we can see how ```FDID``` vastly improves upon the pre-intervention fit of standard DID. Using a control group that is much more similar to Hubei in the pre-2020 period allows the trends to match much more than a naive average and an intercept would. Note however the FDID has a PTA of its own, a much more realistic one. To directly quote the FDID paper,
 > If an intercept adjusted treatment unit is outside the range of the control units (e.g., the treatment’s outcome has an upward trend that is steeper than that of all the control units’ outcomes), then this assumption will be violated because no subset of control units can trace the steeper upward trend of the treatment unit. In such a case, the Forward DID method should not be applied, and researchers should consider alternative methods, such as factor modelbased methods, modified synthetic control methods, or the augmented difference-in-differences method.
 
 We can see here, however, that this is a plausible assumption. Hubei does not have the highest or lowest GDP at any point in the time-series, so we would expect FDID's PTA to be plausible.
