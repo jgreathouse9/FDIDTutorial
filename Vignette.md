@@ -20,7 +20,19 @@ import matplotlib
 ```
 Strictly speaking, you don't need to import ```matplotlib```, I only do so because I am customizing my own graphics.
 ## Model Primitives
-Before I continue, I introduce potential outcomes. The basic problem of causal inference is that time moves forward-- we cannot go into the past and see how Hong Kong or Hubei's GDPs would have evolved absent their respective interventions. Thus, we observe $y_{jt} = d_{jt} y_{jt}^1 + (1 - d_{jt}) y_{jt}^0$ where $d \in \[0,1\]$ is a dummy variable indicating treatment or control status. Here, we have units $j \in \mathcal{N}$ across $t \in \left(1, T\right) \cap \mathbb{N}$ time periods, where $T_0$ is the point the intervention begins at. Here, $j=0$ is our treated unit, leaving us with $1 \ldots N$ control units, denoted as set $\mathcal{N}\_{0}$. $y_{jt}^1$ and $y_{jt}^0$ respectively are the outcomes we would observe under treatment or not. However, we never observe $y_{jt}^0$ while $t \ge T_0$, we only observe a unit's outcomes under treatment or not. This means that we must model the counterfactual, or the outcomes we would observe but for the intervention, under certain assumptions.
+Here, we have units $j \in \mathcal{N}$ across $t \in \left(1, T\right) \cap \mathbb{N}$ time periods. Here, $j=0$ is our treated unit, leaving us with $1 \ldots N$ control units, denoted as set $\mathcal{N}\_{0}$. Partition our time series into sets $\mathcal{T}\coloneqq \mathcal{T}\_{0} \cup \mathcal{T}\_{1}$ with their own cardinalities, where $\mathcal{T}\_{0}\coloneqq  \{1\ldots T_0 \}$ is pre-intervention periods and $\mathcal{T}\_{1}\coloneqq \{T_0+1\ldots T \}$ denotes post-intervention periods. We observe
+```math
+\begin{equation*}
+y_{jt} = 
+\begin{cases}
+    y^{0}_{jt} & \forall \: j\in \mathcal{N}_0\\
+    y^{0}_{0t} & \text{if } j = 0 \text{ and } t \in \mathcal{T}_0 \\
+    y^{1}_{0t} & \text{if } j = 0 \text{ and } t \in \mathcal{T}_1
+\end{cases}
+
+\end{equation*}
+```
+$y_{jt}^1$ and $y_{jt}^0$ respectively are the outcomes we observe under treatment or control.  This means that we observe all of our control units being untreated at all poitns in time, and we observe the outcomes of our treated unit as treated or not. The basic problem of causal inference is that time moves forward-- we cannot go into the past and see how Hong Kong or Hubei's GDPs would have evolved absent their respective interventions. Thus, we observe $y_{jt} = d_{jt} y_{jt}^1 + (1 - d_{jt}) y_{jt}^0$ where $d \in \[0,1\]$ is a dummy variable indicating treatment or control status.
 
 Fundamentally, the DID estimator is valid based on the parallel trends assumption. The classic parallel trends assumption posits the post-intervention trend of our treated unit would be parallel to the average of the control group absent the intervention. Practically speaking, this has a few implications: firstly, no heterogeneous treatment effects. Parallel trends posits that the average, and the average only, of our controls is a sufficient proxy for our coutnerfactual Hong Kong or Hubei. As a corollary, this means that all of our control units are actually similar enough to our treated unit on observed and unobserved factors to serve as proxy counterfactual. This means we ideally would have no outliers or units that are too different from either treated unit, since we know as matter of course that large values relative to other units may inflate the average. However in practice, standard parallel trends is unlikely  to hold. There are 195 national economies in the world and many other cities in China that may be used as comparison units; presumably, most of them would not be sufficient comparison units for Hong Kong or Hubei.
 <p align="center">
