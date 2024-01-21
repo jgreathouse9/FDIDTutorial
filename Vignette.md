@@ -98,6 +98,9 @@ The FDID class makes a few assumptions about ones data structure. Firstly, it pr
 ```
 ## Vanilla DID
 Here is the DID method.
+<details>
+  <summary>Click to expand/collapse</summary>
+    
 ```python
     def DID(self, y, datax, t1):
         t = len(y)
@@ -198,9 +201,14 @@ Here is the DID method.
         return DID_dict
 
 ```
-DID is naturally the main workhorse for the selection algorithm and the ```FDID``` estimator itself. It calculates the DID predictions for a certain input matrix.
+</details>
+
+DID is naturally the main workhorse for the selection algorithm and the ```FDID``` estimator itself. It calculates the DID predictions for a certain input matrix of control units and a vector of treatment unit outcomes.
 ## Augmented DID
 Augmented DID allows for heterogeneous treatment effects. In DID, $\delta_1$ is forced to be equal to 1, whereas in AUGDID this parameter may vary to be any value. For AUGDID, the PTA is that the counterfactual would be parallel to the pure average of controls plus some slope adjusted constant. Notice how both ADID and DID return model fit statistics and ATTs in dictionaries.
+<details>
+  <summary>Click to expand/collapse</summary>
+    
 ```python
   def AUGDID(self, datax, t, t1, t2, y, y1, y2):
     const = np.ones(t)      # t by 1 vector of ones (for intercept)
@@ -311,8 +319,13 @@ Augmented DID allows for heterogeneous treatment effects. In DID, $\delta_1$ is 
 
     return ADID_dict, y_ADID
 ```
+</details>
+
 ## Forward Selection
-In Forward Difference-in-Differences (```FDID```), we use the forward selection algorithm to select our control group. 
+In Forward Difference-in-Differences (```FDID```), we use the forward selection algorithm to select our control group.
+<details>
+  <summary>Click to expand/collapse</summary>
+    
 ```python
     def selector(self, no_control, t1, t, y, y1, y2, datax, control_ID, df):
         R2 = np.zeros(no_control) # Creates an empty vector equal in length to the number of controls
@@ -355,6 +368,8 @@ In Forward Difference-in-Differences (```FDID```), we use the forward selection 
 
         return select_c, R2final
 ```
+</details>
+
 The method takes as inputs the number of pre-intervention periods, post-periods and total time periods, as well as the treatment vector and the donor matrix. It also prints the names of the optimal control units that are selected. Here is what is going on in more detail.
 
 We take the full pool of control units and iteratively use each control unit to predict, via least-squares, the pre-intervenion outcomes of the treated unit. We then store the model which has the highest $R^2$ statistic. For example, say our treated unit is Washington DC and we have Los Angeles, New York City, Chicago, and Miami as controls. If Los Angeles has the higest $R^2$ when we use it in bivariate regression to predict DC's pre-intervention trends, we store the vector of Los Angeles as the first selected unit. Then, we predict the pre-intervention outcomes for the treated unit using Los Angeles, looping through the other unselected control units. If the model that has NYC and Los Angeles has the highest $R^2$, we then add NYC to the selected pool. Then, we estimate DID with these two control units, and calculate its $R^2$ statistic. Then, if Miami has the next highest, we add Miami and estimate DID again. And so on, until we estimate the sum of $1 \ldots N$ models. After we've done so, we then keep the DID model that has the highest $R^2$ statistic. Intuitively, this is an improvement over the standard average of controls: if the average of all controls does not provide a satisfactory approximation for our treated unit, then using some subset of the controls must perform _at least_ as well. The final pool of control units, termed $\hat{U}$ in the FDID paper, is the final control group that we use.
@@ -930,7 +945,7 @@ class FDID:
 ```
 </details>
 
-# Replicating Hsiao, Ching, Wan
+# Replicating Hsiao, Ching, Wan 2012
 Here is an example of using the full thing. I begin by modifying my graphics to my liking
 ```python
 # Matplotlib theme
@@ -952,6 +967,9 @@ Jared_theme = {'axes.grid': True,
 matplotlib.rcParams.update(Jared_theme)
 ```
 Now I import the dataframe (which you may also access in this repo) and do the relvant cleaning to set up the analysis.
+<details>
+  <summary>Click to expand/collapse</summary>
+    
 ```python
 # Define column names
 
@@ -1012,6 +1030,8 @@ outcome = "GDP"
 unitid = "Country"
 time = "Time"
 ```
+</details>
+
 And now for the estimation.
 ```python
 model = FDID(df=df,
@@ -1032,9 +1052,10 @@ Here is our plot. We can also print the results we get in the `estimators_result
 - FDID ATT: 0.025, Percent ATT: 53.843
 - DID ATT: 0.032, Percent ATT: 77.62
 - AUGDID ATT: 0.021, Percent ATT: 41.635
+  
 With these effect sizes, we can see how the method we use affects the $ATT$ we estimate. DID estimates a giant effect size of economic integration, whereas FDID estimate much smaller effects using the optimal control group. In terms of the restrictiveness of their assumptions, DID is the most strict, followed by FDID and AUGDID.
 # Replicating Ke and Hsaio 2020
-Let's do the next example. This example replicates the findings of  [Ke and Hsiao 2020](https://doi.org/10.1002/jae.2871), which estimated the causal impact of Hubei's lockdown for COVID-19 on the economy, measured as Quarterly GDP. Note that here, I import the ``FDID``` class from my ```mlsynth``` library, which houses ```FDID``` and other counterfactual estimators. ```mlsynth``` is still under development, which is why it is not posted here, however the syntax for FDID remains the same.
+Let's do the next example. This example replicates the findings of  [Ke and Hsiao 2020](https://doi.org/10.1002/jae.2871), which estimated the causal impact of Hubei's lockdown for COVID-19 on the economy, measured as Quarterly GDP. Note that here, I import the ```FDID``` class from my ```mlsynth``` library, which houses ```FDID``` and other counterfactual estimators. ```mlsynth``` is still under development, which is why it is not posted here, however the syntax for FDID remains the same.
 ```python
 import requests
 from zipfile import ZipFile
@@ -1159,7 +1180,11 @@ plt.show()
 - DID ATT: 447.525, Percent ATT: 5.808
 - AUGDID ATT: -314.138, Percent ATT: -3.71
 
-Already, we can see how ```FDID``` vastly improves upon the fit of standard DID. Also of note, these results are in line with some of the synthetic control estimators from the ```mlsynth``` library. For example, [Robust PCA SCM](https://arxiv.org/abs/2108.12542) has an ATT of -708, and an 8 percent negative impact on the economy. The Factor Model Approach [by Li and Sonnier](https://doi.org/10.1177/00222437221137533) finds a -664 ATT and a percentage decrease of 7.5. I should note that this is _not_ meant to be a formal comparison of these methods, which would actually be quite interesting. However, it _does_ illustrate the fact that the standard parallel trends assumption invoked in the classic DID design may not always hold, and doing so may lead to nonsensical results; here vanilla DID suggests Hubei's lockdown _improved_ the economy, which isn't a very sensible position to take.
+Already, we can see how ```FDID``` vastly improves upon the pre-intervention fit of standard DID. Using a control group that is much more similar to Hubei in the pre-2020 period allows the trends to match much more than a naive average and an intercept would. Note however the FDID has a PTA of its own, a much more realistic one. To directly quote the FDID paper,
+> If an intercept adjusted treatment unit is outside the range of the control units (e.g., the treatment’s outcome has an upward trend that is steeper than that of all the control units’ outcomes), then this assumption will be violated because no subset of control units can trace the steeper upward trend of the treatment unit. In such a case, the Forward DID method should not be applied, and researchers should consider alternative methods, such as factor modelbased methods, modified synthetic control methods, or the augmented difference-in-differences method.
+
+We can see here, however, that this is a plausible assumption. Hubei does not have the highest or lowest GDP at any point in the time-series, so we would expect FDID's PTA to be plausible.
+In addition to weaker assumptions, it is also intersting to note that these results are in line with some of the more flexible estimators from the ```mlsynth``` library. For example, [Robust PCA SCM](https://arxiv.org/abs/2108.12542) has an ATT of -708, and an 8 percent negative impact on the economy. The Factor Model Approach [by Li and Sonnier](https://doi.org/10.1177/00222437221137533) finds a -664 ATT and a percentage decrease of 7.5. AUGDID, as we see above, also predicted a negative effect on Hubei's GDP. I should note that this is _not_ meant to be a formal comparison of these methods, which would actually be quite interesting. However, it _does_ illustrate the fact that the standard parallel trends assumption invoked in the classic DID design may not always hold, and doing so may lead to nonsensical results; here vanilla DID suggests Hubei's lockdown _improved_ the economy, which isn't a very sensible position to take.
 
 It is my hope that in making my code public we can put more of these advanced econometric methods to use for real policy analysis. The benefit is not simply because they're advanced, but because they improve the accuracy of our estimates with a few simple adjustments to standard econometric techniques. This is an ongoing project; any feedback or comments are most welcome!
 
