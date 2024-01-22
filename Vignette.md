@@ -200,9 +200,9 @@ Here is the DID method.
 ```
 </details>
 
-DID is naturally the main workhorse for the selection algorithm and the ```FDID``` estimator itself. It calculates the DID predictions for a certain input matrix of control units and a vector of treatment unit outcomes.
+DID is naturally the main workhorse for the selection algorithm and the ```FDID``` estimator itself. It calculates the DID predictions for a certain input matrix of control units and a vector of treatment unit outcomes. When we use OLS to estimate DID, we can think of a least squares estimator where our counterfactual $y^{\text{DID}}\_{jt}$ may be estimated via $y^{\text{DID}}\_{jt} = \delta_0 + \delta_1 \bar{y}\_{j \in \mathcal{N}\_{0}}   \forall   t \in \mathcal{T}\_{0}$, where $\delta_0$ is the intercept and $\delta_1$ is a coefficient that equals 1 and $\bar{y}$ is the average of our control units.
 ## Augmented DID
-Augmented DID allows for heterogeneous treatment effects. In DID, $\delta_1$ is forced to be equal to 1, whereas in AUGDID this parameter may vary to be any value. For AUGDID, the PTA is that the counterfactual would be parallel to the pure average of controls plus some slope adjusted constant. Notice how both ADID and DID return model fit statistics and ATTs in dictionaries.
+Augmented DID allows for heterogeneous treatment effects. In AUGDID, our regression model is $y^{\text{ADID}}\_{jt} = \delta_0 + \delta_1 \bar{y}\_{j \in \mathcal{N}\_{0}}   \forall   t \in \mathcal{T}\_{0}$ where $\delta_1$ may be any value. For AUGDID, the PTA is that the counterfactual would be parallel to the pure average of controls plus some slope adjusted constant. Notice how both ADID and DID return model fit statistics and ATTs in dictionaries.
 <details>
   <summary>Click to expand/collapse</summary>
     
@@ -386,7 +386,7 @@ Now for the actual estimation.
 
         return FDID_dict, DID_dict, AUGDID_dict, y_FDID
 ```
-Notice how a very simple process is at work here: the ```control``` matrix (or, the matrix of control units that are selected based off index set $\hat{U}$) serves as the new control group, in contrast to ```datax```, the original control group. The method returns the relevant dictionaries of fit and effect size estimates across all designs (```AUGDID```, ```DID``` and ```FDID```). With the helper functions described, we can now go into the main function of the class that the user needs to actually work with, the ```.fit``` method.
+The regression model is $y^{\text{FDID}}\_{jt} = \delta_0 + \delta_1 \bar{y}\_{j \in \hat{U}}   \forall   t \in \mathcal{T}\_{0}$. Here, $\delta_1$ still must be equal to 1, but parallel trends is made into a more plausible assumption by virtue of the improved control group. In the code, ```control``` matrix (or, the matrix of control units that are selected based off index set $\hat{U}$) serves as the new control group, in contrast to ```datax```, the original control group. The method returns the relevant dictionaries of fit and effect size estimates across all designs (```AUGDID```, ```DID``` and ```FDID```). With the helper functions described, we can now go into the main function of the class that the user needs to actually work with, the ```.fit``` method.
 ## Fitting FDID
 <details>
   <summary>Click to expand/collapse</summary>
