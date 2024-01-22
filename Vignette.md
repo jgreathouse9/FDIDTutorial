@@ -8,7 +8,7 @@ A Tutorial on Forward and Augmented Difference-in-Differences
 # Introduction
 This tutorial uses publicly available data to demonstrate the utility of the [Forward](https://doi.org/10.1287/mksc.2022.0212) and [Augmented](https://doi.org/10.1287/mksc.2022.1406) Difference-in-Differences estimators. It is based on the MATLAB code very kindly provided by [Kathleen Li](https://sites.utexas.edu/kathleenli/).
 
-We estimate the counterfactual for two empirical examples: First is GDP Growth for Hong Kong had their economy never economically integrated with Mainland China, [revisiting](https://doi.org/10.1002/jae.1230) the classic panel data approach study. Then we revisit [a more recent study](https://doi.org/10.1002/jae.2871) where we estimate the Quarterly GDP for Hubei had their economy never locked down in 2020 to prevent the spread of COVID-19. This tutorial will consist of two parts: firstly I will go over the anatomy of the class itself, detrailing its helper functions and explaining what each one does. Then I will go over the way to actually estimate the model. However, first we have some preliminaries:
+We estimate the counterfactual for two empirical examples: First is GDP Growth for Hong Kong had their economy never economically integrated with Mainland China, [revisiting](https://doi.org/10.1002/jae.1230) the classic panel data approach study. Then we revisit [a more recent study](https://doi.org/10.1002/jae.2871) where we estimate the Quarterly GDP for Hubei had their economy never locked down in 2020 to prevent the spread of COVID-19. This tutorial will consist of two parts: firstly I will go over the anatomy of the class itself, detailing its helper functions and explaining what each sub-method does. Then I discuss how to estimate the model. However, first we have some preliminaries:
 ## Prerequisite Libraries
 ```python
 import numpy as np
@@ -20,7 +20,7 @@ import matplotlib
 ```
 Strictly speaking, you don't need to import ```matplotlib```, I only do so because I am customizing my own graphics.
 ## Model Primitives
-Here, we have units $j \in \mathcal{N}$ across $t \in \left(1, T\right) \cap \mathbb{N}$ time periods. Here, $j=0$ is our treated unit, leaving us with $1 \ldots N$ control units, denoted as set $\mathcal{N}\_{0}$. Partition our time series into sets $\mathcal{T}\coloneqq \mathcal{T}\_{0} \cup \mathcal{T}\_{1}$ with their own cardinalities, where $\mathcal{T}\_{0}\coloneqq  \{1\ldots T_0 \}$ is pre-intervention periods and $\mathcal{T}\_{1}\coloneqq \{T_0+1\ldots T \}$ denotes post-intervention periods. We observe
+Here, we have units $j \in \mathcal{N}$ across $t \in \left(1, T\right) \cap \mathbb{N}$ time periods. Here, $j=0$ is our treated unit, leaving us with $1 \ldots N$ control units, denoted as set $\mathcal{N}\_{0}$. Partition our time series into sets $\mathcal{T}\coloneqq \mathcal{T}\_{0} \cup \mathcal{T}\_{1}$ with their own cardinalities, where $\mathcal{T}\_{0}\coloneqq  \{1\ldots T_0 \}$ is pre-intervention period and $\mathcal{T}\_{1}\coloneqq \{T_0+1\ldots T \}$ denotes the post-intervention period. We observe
 ```math
 \begin{equation*}
 y_{jt} = 
@@ -32,11 +32,11 @@ y_{jt} =
 
 \end{equation*}
 ```
-where $y_{jt}^1$ and $y_{jt}^0$ respectively are the outcomes we observe under treatment or control.  This means that we observe all of our control units being untreated at all poitns in time, and we observe the outcomes of our treated unit as treated or not. The basic problem of causal inference is that we can't see how Hong Kong or Hubei's GDPs would have evolved in the post-intervention period absent their respective interventions. Thus, we observe $y_{jt} = d_{jt} y_{jt}^1 + (1 - d_{jt}) y_{jt}^0$ where $d \in \[0,1\]$ is a dummy variable indicating treatment or control status. Thus, the counterfactual outcome is something that we must estimate.
+where $y_{jt}^1$ and $y_{jt}^0$ respectively are the outcomes we observe under treatment or control. The above brace says we observe all of our control units being untreated at all points in time, and we observe the outcomes of our treated unit as treated or not. The basic problem of causal inference is that we can't see how Hong Kong or Hubei's GDPs would have evolved in the post-intervention period absent their respective interventions. The reason for this, naturally, is the treatment $y_{jt} = d_{jt} y_{jt}^1 + (1 - d_{jt}) y_{jt}^0$ where $d \in \[0,1\]$ is a dummy variable indicating treatment or control status. Thus, the counterfactual outcome is something that we must estimate.
 ## Parallel Trends
 Two (**very wrong**) ways we could do this are
-- Subtract the average of the pre-intervention GDPs from the post-intervention GDPs, or
-- Subtract the average of the treated units from the post-intervention average of the control units.
+- Subtracting the average of the pre-intervention GDPs for the treated unit from their own post-intervention GDPs, or
+- Subtracting the average of the treated units from the post-intervention average of the control units.
 
 The first approach assumes that nothing else was impacting the pre and post-GDPs aside from the intervention. The latter presumes that there are no differences (or at least, that they are too small to matter) between the treated units and the control units. DID however makes a slightly more realsitic assumption, called the parallel trends assumption (PTA), $\mathbb{E}\[y_{jt} | d = 1, t \in \mathcal{T}\_{1}\] - \mathbb{E}\[y_{jt} | d = 0, t \in \mathcal{T}\_{1}\] = \delta_0 + \delta_1$. PTA posits the post-intervention trend of our treated unit would be parallel to the average of the control group absent the intervention. Practically speaking, this has an important implication: under classic PTA, all of our control units are similar enough to our treated unit such that the average of the controls is actually parallel to the trend of our treated unit. How true is this assumption though? Because it is an assumption, we cannot perfectly test for it. However, we can test part of it, namely by inspecting the pre-intervention period. So, let's do it for Hubei.
 <p align="center">
