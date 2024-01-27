@@ -20,7 +20,7 @@ import matplotlib
 ```
 Strictly speaking, you don't need to import ```matplotlib```, I only do so because I am customizing my own graphics.
 ## Model Primitives
-Here, we have $\mathcal{N} \coloneqq \lbrace{0 \ldots N \rbrace}$ units across $t \in \left(1, T\right) \cap \mathbb{N}$ time periods, where $j=0$ is our sole treated unit. This leaves us with $\mathcal{N}\_{0} \coloneqq \lbrace{1 \ldots N\rbrace}$ control units. We have two sets of time series with $\mathcal{T}\coloneqq \mathcal{T}\_{0} \cup \mathcal{T}\_{1}$ with their own cardinalities, where $\mathcal{T}\_{0}\coloneqq  \lbrace{1\ldots T_0 \rbrace}$ is pre-intervention period and $\mathcal{T}\_{1}\coloneqq \lbrace{T_0+1\ldots T \rbrace}$ denotes the post-intervention period. We observe
+Here, we have $\mathcal{N} \coloneqq \lbrace{0 \ldots N \rbrace}$ units across $t \in \left(1, T\right) \cap \mathbb{N}$ time periods, where $j=0$ is our sole treated unit. This leaves us with $\mathcal{N}\_{0} \coloneqq \lbrace{1 \ldots N\rbrace}$ control units. We have two sets of time series $\mathcal{T}\coloneqq \mathcal{T}\_{0} \cup \mathcal{T}\_{1}$, where $\mathcal{T}\_{0}\coloneqq  \lbrace{1\ldots T_0 \rbrace}$ is the pre-intervention period and $\mathcal{T}\_{1}\coloneqq \lbrace{T_0+1\ldots T \rbrace}$ denotes the post-intervention period. We observe
 ```math
 \begin{equation*}
 y_{jt} = 
@@ -32,7 +32,7 @@ y_{jt} =
 
 \end{equation*}
 ```
-where $y_{jt}^1$ and $y_{jt}^0$ respectively are the outcomes we observe under treatment or control. The above brace says we observe all of our control units being untreated at all points in time, and we observe the outcomes of our treated unit as treated or not. The basic problem of causal inference is that we can't see how Hong Kong or Hubei's GDPs would have evolved in the post-intervention period absent their respective interventions. The reason for this, naturally, is the treatment $y_{jt} = d_{jt} y_{jt}^1 + (1 - d_{jt}) y_{jt}^0$ where $d \in \lbrace{0,1\rbrace}$ is a dummy variable indicating treatment or control status. Thus, the counterfactual outcome is something that we must estimate.
+where $y_{jt}^1$ and $y_{jt}^0$ respectively are the outcomes we observe under treatment or control. The above brace says we observe all of our control units being untreated at all points in time, and we observe the outcomes of our treated unit as treated or not (denoted by time of course). The basic problem of causal inference is that we can't see how Hong Kong or Hubei's GDPs would have evolved in the post-intervention period absent their respective interventions. The reason for this, naturally, is the treatment $y_{jt} = d_{jt} y_{jt}^1 + (1 - d_{jt}) y_{jt}^0$ where $d \in \lbrace{0,1\rbrace}$ is a dummy variable indicating treatment or control status. Thus, the counterfactual outcome is something that we must estimate.
 ## Parallel Trends
 Two (**very wrong**) ways we could do this are
 - Subtracting the average of the pre-intervention GDPs for the treated unit from their own post-intervention GDPs, or
