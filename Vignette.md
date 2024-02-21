@@ -6,7 +6,7 @@ A Tutorial on Forward and Augmented Difference-in-Differences
 **Author:** *Jared Greathouse*
 
 # Introduction
-This tutorial uses publicly available data to demonstrate the utility of the [Forward](https://doi.org/10.1287/mksc.2022.0212) and [Augmented](https://doi.org/10.1287/mksc.2022.1406) Difference-in-Differences estimators. It is based on the MATLAB code very kindly provided by [Kathleen Li](https://sites.utexas.edu/kathleenli/).
+This tutorial uses publicly available data to demonstrate the utility of the [Forward](https://doi.org/10.1287/mksc.2022.0212) and [Augmented](https://doi.org/10.1287/mksc.2022.1406) Difference-in-Differences estimators. It is based on MATLAB code very kindly provided by [Kathleen Li](https://sites.utexas.edu/kathleenli/).
 
 We estimate the counterfactual for two empirical examples: First is GDP Growth for Hong Kong had their economy never economically integrated with Mainland China, [revisiting](https://doi.org/10.1002/jae.1230) the classic panel data approach study. Then we revisit [a more recent study](https://doi.org/10.1002/jae.2871) where we estimate the Quarterly GDP for Hubei had their economy never locked down in 2020 to prevent the spread of COVID-19. This tutorial will consist of two parts: firstly I will go over the anatomy of the class itself, detailing its helper functions and explaining what each sub-method does. Then I discuss how to estimate the model. However, first we have some preliminaries:
 ## Prerequisite Libraries
