@@ -1042,17 +1042,57 @@ model = FDID(df=df,
              counterfactual_color='#7DF9FF')
 estimators_results = model.fit()
 ```
+
+The model prints the plot by itself, but we can also extract these results as follows
+
+```python
+observed_unit = HKRes[0]["FDID"]["Vectors"]["Observed Unit"]
+FDID_unit = HKRes[0]["FDID"]["Vectors"]["Counterfactual"]
+
+DID_unit = HKRes[1]["DID"]["Vectors"]["Counterfactual"]
+treatdate = HKRes[2]["AUGDID"]["Fit"]["T0"]
+
+
+# Plotting
+plt.figure(figsize=(10, 6))
+plt.plot(observed_unit,
+         label='Observed Hong Kong',
+         linestyle='-', color='black', linewidth=2)
+plt.plot(DID_unit, label='DID Hong Kong',
+         linestyle='-', color='red')
+
+plt.plot(FDID_unit, label='FDID Hong Kong',
+         linestyle='-', color='blue')
+
+plt.xlabel(time)
+plt.ylabel(outcome)
+plt.title('Reality versus Predictions')
+plt.ylim(bottom=-.1, top=.25)
+
+plt.axvline(x=treatdate, color='black', linestyle='--',
+            linewidth=3, label=f'{treat}, {treatdate}')
+
+
+plt.legend()
+
+plt.show()
+```
 <p align="center">
   <img src="FDID_HK.png" alt="Alt Text" width="50%">
 </p>
 
-Here is our plot. We can also print the results we get in the `estimators_results` list, which returns the method relevant dictionaries, ```FDID``` selects Philippines, Singapore, Thailand, Norway, Mexico, Korea, Indonesia, New Zealand, Malaysia as the optimal control group.
+```FDID``` selects Philippines, Singapore, Thailand, Norway, Mexico, Korea, Indonesia, New Zealand, Malaysia as the optimal control group.
 
 - FDID ATT: 0.025, Percent ATT: 53.843
 - DID ATT: 0.032, Percent ATT: 77.62
 - AUGDID ATT: 0.021, Percent ATT: 41.635
   
-With these effect sizes, we can see how the method we use affects the $ATT$ we estimate. DID estimates a giant effect size of economic integration, whereas FDID estimate much smaller effects using the optimal control group. In terms of the restrictiveness of their assumptions, DID is the most strict, followed by FDID and AUGDID.
+With these effect sizes, we can see how the method we use affects the $ATT$ we estimate. DID estimates a giant effect size of economic integration, whereas FDID estimate much smaller effects using the optimal control group. Some, however, may still be unconvinced: "These effect sizes appear the same", one might say, "what is the added value of FDID for business or policy analysis when these effect sizes at first blush appear similar?" This is where visualizing the $ATT$ and their uncertainties comes in handy.
+
+<p align="center">
+  <img src="FDID_HK_CIs.png" alt="Alt Text" width="50%">
+</p>
+
 # Replicating Ke and Hsaio 2020
 Let's do the next example. This example replicates the findings of  [Ke and Hsiao 2020](https://doi.org/10.1002/jae.2871), which estimated the causal impact of Hubei's lockdown for COVID-19 on the economy, measured as Quarterly GDP. Note that here, I import the ```FDID``` class from my ```mlsynth``` library, which houses ```FDID``` and other counterfactual estimators. ```mlsynth``` is still under development, which is why it is not posted here, however the syntax for FDID remains the same.
 ```python
