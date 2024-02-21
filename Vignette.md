@@ -505,21 +505,16 @@ With all this in mind, here is the complete class.
 
 ```python
 class FDID:
-    def __init__(
-        self,
-        df,
-        unitid,
-        time,
-        outcome,
-        treat,
-        figsize=(12, 6),
-        graph_style="default",
-        grid=True,
-        counterfactual_color="red",
-        treated_color="black",
-        filetype="png",
-        display_graphs=True,
-    ):
+    def __init__(self, df, unitid, time, outcome, treat,
+                 figsize=(12, 6),
+                 graph_style="default",
+                 grid=True,
+                 counterfactual_color="red",
+                 treated_color="black",
+                 filetype="png",
+                 display_graphs=True,
+                 placebo=None
+                 ):
         self.df = df
         self.unitid = unitid
         self.time = time
@@ -534,15 +529,36 @@ class FDID:
         self.filetype = filetype
         self.display_graphs = display_graphs
 
+        # Check for the "placebo" option
+        if placebo is not None:
+            self.validate_placebo_option(placebo)
+            self.placebo_option = placebo
+
+    def validate_placebo_option(self, placebo):
+        # Check if the provided placebo option is a dictionary
+        if not isinstance(placebo, dict):
+            raise ValueError("The 'placebo' option must be a dictionary.")
+
+        # Check for the first key in the dictionary
+        first_key = next(iter(placebo), None)
+        if first_key not in ["Time", "Space"]:
+            raise ValueError(
+                "The first key in the 'placebo' option must be either 'Time' or 'Space'.")
+
+        # If the first key is "Time", check if the associated value is a list of positive integers
+        if first_key == "Time":
+            values = placebo[first_key]
+            if not (isinstance(values, list) and all(isinstance(num, int) and num > 0 for num in values)):
+                raise ValueError(
+                    "If the first key in the 'placebo' option is 'Time', the associated value must be a list of positive integers.")
+
     def DID(self, y, datax, t1):
         t = len(y)
 
-        x1, x2 = np.mean(datax[:t1], axis=1).reshape(-1, 1), np.mean(
-            datax[t1:t], axis=1
-        ).reshape(-1, 1)
         x1, x2 = np.mean(datax[:t1], axis=1).reshape(-1,
                                                      1), np.mean(datax[t1:t], axis=1).reshape(-1, 1)
         b_DID = np.mean(y[:t1] - x1, axis=0)  # DID intercept estimator
+
         y1_DID = b_DID + x1  # DID in-sample-fit
         y2_DID = b_DID + x2  # DID out-of-sample prediction
         y_DID = np.vstack((y1_DID, y2_DID))  # Stack y1_DID and y2_DID vertically
@@ -550,6 +566,8 @@ class FDID:
         y1_DID, y2_DID = y_DID[:t1], y_DID[t1:t]
 
         # DID ATT estimate and percentage
+        if hasattr(self, 'placebo_option'):
+            t1 = self.realt1
 
         ATT_DID = np.mean(y[t1:t] - y_DID[t1:t])
         ATT_DID_percentage = 100 * ATT_DID / np.mean(y_DID[t1:t])
@@ -565,7 +583,6 @@ class FDID:
         u1_DID = y[:t1] - y_DID[:t1]
 
         # \hat \Sigma_{1,DID} and \hat \Sigma_{2,DID}
-
         t2 = t - t1
 
         Omega_1_hat_DID = (t2 / t1) * np.mean(u1_DID**2)
@@ -599,14 +616,12 @@ class FDID:
         ]
 
         # Metrics of fit subdictionary
-
         Fit_dict = {
-            "T0 RMSE": round(np.std(y[:t1] - y1_DID), 3),
-            "R-Squared": round(R2_DID, 3),
+            "T0 RMSE": round(np.std(y[:t1] - y_DID[:t1]), 3),
+            "R-Squared": round(R2_DID, 3)
         }
 
         # ATTS subdictionary
-
         ATTS = {
             "ATT": round(ATT_DID, 3),
             "Percent ATT": round(ATT_DID_percentage, 3),
@@ -614,75 +629,58 @@ class FDID:
         }
 
         # Inference subdictionary
-
         Inference = {
             "P-Value": round(p_value_DID, 3),
             "95 LB": round(CI_95_DID_left, 3),
             "95 UB": round(CI_95_DID_right, 3),
+            "Width": CI_95_DID_right - CI_95_DID_left
         }
 
-        # Vectors subdictionary
+        gap = y - y_DID
 
+        second_column = np.arange(gap.shape[0]) - t1+1
+
+        gap_matrix = np.column_stack((gap, second_column))
+
+        # Vectors subdictionary
         Vectors = {
             "Observed Unit": np.round(y, 3),
-            "DID Unit": np.round(y_DID, 3),
-            "Gap": np.round(y - y_DID, 3),
+            "Counterfactual": np.round(y_DID, 3),
+            "Gap": np.round(gap_matrix, 3)
         }
 
         # Main dictionary
-
         DID_dict = {
             "Effects": ATTS,
             "Vectors": Vectors,
             "Fit": Fit_dict,
-            "Inference": Inference,
+            "Inference": Inference
         }
 
         return DID_dict
 
     def AUGDID(self, datax, t, t1, t2, y, y1, y2):
-        const = np.ones(t)  # t by 1 vector of ones (for intercept)
+        const = np.ones(t)      # t by 1 vector of ones (for intercept)
         # add an intercept to control unit data matrix, t by N (N=11)
-
         x = np.column_stack([const, datax])
-        x1 = x[:t1, :]  # control units' pretreatment data matrix, t1 by N
-        x2 = x[t1:, :]  # control units' pretreatment data matrix, t2 by N
+        x1 = x[:t1, :]          # control units' pretreatment data matrix, t1 by N
+        x2 = x[t1:, :]          # control units' pretreatment data matrix, t2 by N
 
         # ATT estimation by ADID method
-
         x10 = datax[:t1, :]
         x20 = datax[t1:, :]
         x1_ADID = np.column_stack([np.ones(x10.shape[0]), np.mean(x10, axis=1)])
         x2_ADID = np.column_stack([np.ones(x20.shape[0]), np.mean(x20, axis=1)])
-        # Define variables
 
-        b_ADID_cvx = cp.Variable(x1_ADID.shape[1])
+        b_ADID = np.linalg.inv(x1_ADID.T @ x1_ADID) @ (x1_ADID.T @ y1)  # ADID estimate of delta
 
-        # Define the problem
+        y1_ADID = x1_ADID @ b_ADID  # t1 by 1 vector of ADID in-sample fit
+        y2_ADID = x2_ADID @ b_ADID  # t2 by 1 vector of ADID prediction
 
-        objective = cp.Minimize(cp.sum_squares(x1_ADID @ b_ADID_cvx - y1))
-        problem = cp.Problem(objective)
-
-        # Solve the problem
-
-        problem.solve()
-
-        # Extract the solution
-
-        b_ADID_optimized = b_ADID_cvx.value
-
-        # Compute in-sample fit
-
-        y1_ADID = x1_ADID @ b_ADID_optimized
-
-        # Compute prediction
-
-        y2_ADID = x2_ADID @ b_ADID_optimized
-
-        # Concatenate in-sample fit and prediction
-
-        y_ADID = np.concatenate([y1_ADID, y2_ADID])
-
+        # t by 1 vector of ADID fit/prediction
+        y_ADID = np.concatenate([y1_ADID, y2_ADID]).reshape(-1, 1)
+        if hasattr(self, 'placebo_option'):
+            t1 = self.realt1
         ATT = np.mean(y2 - y2_ADID)  # ATT by ADID
         ATT_per = 100 * ATT / np.mean(y2_ADID)  # ATT in percentage by ADID
 
@@ -694,14 +692,14 @@ class FDID:
         eta_ADID = np.mean(x2, axis=0).reshape(-1, 1)
         psi_ADID = x1.T @ x1 / t1
 
-        Omega_1_ADID = (sigma2_ADID * eta_ADID.T) @ np.linalg.inv(psi_ADID) @ eta_ADID
+        Omega_1_ADID = (sigma2_ADID * eta_ADID.T) @ np.linalg.pinv(psi_ADID) @ eta_ADID
         Omega_2_ADID = sigma2_ADID
 
         Omega_ADID = (t2 / t1) * Omega_1_ADID + Omega_2_ADID  # Variance
 
         ATT_std = np.sqrt(t2) * ATT / np.sqrt(Omega_ADID)
-        alpha = 0.5
-        quantile = norm.ppf(1 - alpha)
+
+        quantile = norm.ppf(0.975)
 
         CI_95_DID_left = ATT - quantile * np.sqrt(sigma2_ADID) / np.sqrt(t2)
         CI_95_DID_right = ATT + quantile * np.sqrt(sigma2_ADID) / np.sqrt(t2)
@@ -722,14 +720,13 @@ class FDID:
         ]
 
         # Metrics of fit subdictionary
-
         Fit_dict = {
-            "T0 RMSE": round(np.std(y[:t1] - y1_ADID), 3),
+            "T0 RMSE": round(np.std(y[:t1] - y_ADID[:t1]), 3),
             "R-Squared": round(R2_ADID, 3),
+            "T0": len(y[:t1])
         }
 
         # ATTS subdictionary
-
         ATTS = {
             "ATT": round(ATT, 3),
             "Percent ATT": round(ATT_per, 3),
@@ -737,28 +734,31 @@ class FDID:
         }
 
         # Inference subdictionary
-
         Inference = {
             "P-Value": round(p_value_aDID.item(), 3),
             "95 LB": round(CI_95_DID_left.item(), 3),
             "95 UB": round(CI_95_DID_right.item(), 3),
+            "Width": CI_95_DID_right - CI_95_DID_left
         }
+        gap = y - y_ADID
+
+        second_column = np.arange(gap.shape[0]) - t1+1
+
+        gap_matrix = np.column_stack((gap, second_column))
 
         # Vectors subdictionary
-
         Vectors = {
             "Observed Unit": np.round(y, 3),
-            "DID Unit": np.round(y_ADID, 3),
-            "Gap": np.round(y - y_ADID, 3),
+            "Counterfactual": np.round(y_ADID, 3),
+            "Gap": np.round(gap_matrix, 3)
         }
 
         # Main dictionary
-
         ADID_dict = {
             "Effects": ATTS,
             "Vectors": Vectors,
             "Fit": Fit_dict,
-            "Inference": Inference,
+            "Inference": Inference
         }
 
         return ADID_dict, y_ADID
@@ -767,12 +767,20 @@ class FDID:
 
         FDID_dict = self.DID(y.reshape(-1, 1), control, t1)
 
-        y_FDID = FDID_dict["Vectors"]["DID Unit"]
+        y_FDID = FDID_dict['Vectors']['Counterfactual']
 
         DID_dict = self.DID(y.reshape(-1, 1), datax, t1)
 
         AUGDID_dict, y_ADID = self.AUGDID(datax, t, t1, t2, y, y1, y2)
         time_points = np.arange(1, len(y) + 1)
+
+        # Calculate the ratio of widths for DID and AUGDID compared to FDID
+        ratio_DID = DID_dict["Inference"]["Width"] / FDID_dict["Inference"]["Width"]
+        ratio_AUGDID = AUGDID_dict["Inference"]["Width"] / FDID_dict["Inference"]["Width"]
+
+        # Add the new elements to the Inference dictionaries
+        DID_dict["Inference"]["WidthRFDID"] = ratio_DID
+        AUGDID_dict["Inference"]["WidthRFDID"] = ratio_AUGDID
 
         return FDID_dict, DID_dict, AUGDID_dict, y_FDID
 
@@ -798,17 +806,16 @@ class FDID:
                 combined_control = np.concatenate(
                     (
                         datax[:t1, np.concatenate((select_c[: k - 1], [left[jj]]))],
-                        datax[t1:t, np.concatenate((select_c[: k - 1], [left[jj]]))],
+                        datax[t1:t, np.concatenate((select_c[: k - 1], [left[jj]]))]
                     ),
-                    axis=0,
+                    axis=0
                 )
                 ResultDict = self.DID(y.reshape(-1, 1), combined_control, t1)
                 R2[jj] = ResultDict["Fit"]["R-Squared"]
+
             R2final[k - 1] = np.max(R2)
             select = left[np.argmax(R2)]
             select_c[k - 1] = select
-        selected_unit_names = [df.columns[i] for i in select_c]
-
         return select_c, R2final
 
     def fit(self):
@@ -816,9 +823,9 @@ class FDID:
             values=self.outcome, index=self.time, columns=self.unitid, sort=False
         )
 
-        treated_unit_name = self.df.loc[self.df[self.treated] == 1, self.unitid].values[
-            0
-        ]
+        treated_unit_name = self.df.loc[self.df[self.treated] == 1, self.unitid].values[0]
+        Ywide = Ywide[[treated_unit_name] +
+                      [col for col in Ywide.columns if col != treated_unit_name]]
         y = Ywide[treated_unit_name].values.reshape(-1, 1)
         donor_df = self.df[self.df[self.unitid] != treated_unit_name]
         donor_names = donor_df[self.unitid].unique()
@@ -829,118 +836,179 @@ class FDID:
         t = np.shape(y)[0]
         assert t > 5, "You have less than 5 total periods."
 
-        t1 = len(
+        results = []  # List to store results
+
+        self.realt1 = len(
             self.df[
                 (self.df[self.unitid] == treated_unit_name)
                 & (self.df[self.treated] == 0)
             ]
         )
-        t2 = t - t1
-        y1 = np.ravel(y[:t1])
-        y2 = np.ravel(y[-t2:])
 
-        control_order, R2_final = self.selector(
-            no_control, t1, t, y, y1, y2, datax, control_ID, Ywide
-        )
-        selected_control_indices = control_order[: R2_final.argmax() + 1]
-        copy_wide_copy = Ywide.iloc[:, 1:].copy()
-        selected_controls = [copy_wide_copy.columns[i] for i in selected_control_indices]
+        if hasattr(self, 'placebo_option'):
+            print("Placebo Option in fit method:", self.placebo_option)
+            placebo_list = self.placebo_option.get("Time")
+            placebo_list = [0] + self.placebo_option.get("Time")
+            for i, itp in enumerate(placebo_list):
+                t1 = len(
+                    self.df[
+                        (self.df[self.unitid] == treated_unit_name)
+                        & (self.df[self.treated] == 0)
+                    ]
+                ) - itp
 
-        control = datax[:, control_order[: R2_final.argmax() + 1]]
+                t2 = t - t1
+                y1 = np.ravel(y[:t1])
+                y2 = np.ravel(y[-t2:])
 
-        FDID_dict, DID_dict, AUGDID_dict, y_FDID = self.est(
-            control, t, t1, t - t1, y, y1, y2, datax
-        )
-        FDID_dict['Selected Units'] = selected_controls
-        estimators_results = []
-        estimators_results.append({"FDID": FDID_dict})
-        # Append the normal DID dictionary to the list
+                control_order, R2_final = self.selector(
+                    no_control, t1, t, y, y1, y2, datax, control_ID, Ywide
+                )
+                selected_control_indices = control_order[:R2_final.argmax() + 1]
+                copy_wide_copy = Ywide.iloc[:, 1:].copy()
+                selected_controls = [copy_wide_copy.columns[i] for i in selected_control_indices]
 
-        estimators_results.append({"DID": DID_dict})
-        estimators_results.append({"AUGDID": AUGDID_dict})
+                control = datax[:, control_order[: R2_final.argmax() + 1]]
 
-        def round_dict_values(input_dict, decimal_places=3):
-            rounded_dict = {}
-            for key, value in input_dict.items():
-                if isinstance(value, dict):
-                    # Recursively round nested dictionaries
+                FDID_dict, DID_dict, AUGDID_dict, y_FDID = self.est(
+                    control, t, t1, t - t1, y, y1, y2, datax
+                )
 
-                    rounded_dict[key] = round_dict_values(value, decimal_places)
-                elif isinstance(value, (int, float, np.float64)):
-                    # Round numeric values
+                placebo_results = []  # Initialize an empty list for each placebo iteration
+                FDID_dict['Selected Units'] = selected_controls
+                placebo_results.append({"FDID": FDID_dict})
 
-                    rounded_dict[key] = round(value, decimal_places)
-                else:
-                    rounded_dict[key] = value
-            return rounded_dict
+                # Append the normal DID dictionary to the list
+                placebo_results.append({"DID": DID_dict})
+                placebo_results.append({"AUGDID": AUGDID_dict})
 
-        # Round all values in the estimators_results list of dictionaries
+                def round_dict_values(input_dict, decimal_places=3):
+                    rounded_dict = {}
+                    for key, value in input_dict.items():
+                        if isinstance(value, dict):
+                            # Recursively round nested dictionaries
+                            rounded_dict[key] = round_dict_values(value, decimal_places)
+                        elif isinstance(value, (int, float, np.float64)):
+                            # Round numeric values
+                            rounded_dict[key] = round(value, decimal_places)
+                        else:
+                            rounded_dict[key] = value
+                    return rounded_dict
 
-        estimators_results = [
-            round_dict_values(result) for result in estimators_results
-        ]
-        if self.display_graphs:
+                # Round all values in the placebo_results list of dictionaries
+                placebo_results = [
+                    round_dict_values(result) for result in placebo_results
+                ]
 
-            time_axis = self.df[self.df[self.unitid] == treated_unit_name][
-                self.time
-            ].values
-            intervention_point = self.df.loc[
-                self.df[self.treated] == 1, self.time
-            ].min()
-            n = np.arange(1, t + 1)
-            fig = plt.figure(figsize=self.figsize)
+                # Add the placebo results to the overall results list with a labeled key
+                results.append({"Placebo" + str(i): placebo_results})
 
-            # caption = f"RMSE: {T0 RMSE:.3f}, ATT: {ATT:.3f}, %ATT: {ATT_per:.3f}%"
-            # plt.figtext(0.5, 0.01, caption, wrap=True, ha="center", va="top")
-
-            plt.plot(
-                n,
-                y,
-                color=self.treated_color,
-                label="Observed " + treated_unit_name,
-                linewidth=3,
+        else:
+            # Your logic for when placebo_option is not specified
+            t1 = len(
+                self.df[
+                    (self.df[self.unitid] == treated_unit_name)
+                    & (self.df[self.treated] == 0)
+                ]
             )
-            plt.plot(
-                n[:t1],
-                y_FDID[:t1],
-                color=self.counterfactual_color,
-                linewidth=3,
-                label="FDID " + treated_unit_name,
-            )
-            plt.plot(
-                n[t1 - 1 :],
-                y_FDID[t1 - 1 :],
-                color=self.counterfactual_color,
-                linestyle="--",
-                linewidth=2.5,
-            )
-            plt.axvline(
-                x=intervention_point,
-                color="#ed2939",
-                linestyle="--",
-                linewidth=2.5,
-                label=self.treated + ", " + str(intervention_point),
-            )
-            upb = max(max(y), max(y_FDID))
-            lpb = min(0.5 * min(min(y), min(y_FDID)), 1 * min(min(y), min(y_FDID)))
 
-            # Set y-axis limits
+            t2 = t - t1
+            y1 = np.ravel(y[:t1])
+            y2 = np.ravel(y[-t2:])
 
-            plt.ylim(lpb, upb)
-            plt.xlabel(self.time)
-            plt.ylabel(self.outcome)
-            plt.title(
-                "FDID Analysis: "
-                + treated_unit_name
-                + " versus Synthetic "
-                + treated_unit_name
+            control_order, R2_final = self.selector(
+                no_control, t1, t, y, y1, y2, datax, control_ID, Ywide
             )
-            plt.grid(self.grid)
-            plt.legend()
-            # plt.savefig(treated_unit_name + "FDIDfigure." + self.filetype)
+            selected_control_indices = control_order[:R2_final.argmax() + 1]
+            copy_wide_copy = Ywide.iloc[:, 1:].copy()
+            selected_controls = [copy_wide_copy.columns[i] for i in selected_control_indices]
 
-            plt.show()
-        return estimators_results
+            control = datax[:, control_order[: R2_final.argmax() + 1]]
+
+            FDID_dict, DID_dict, AUGDID_dict, y_FDID = self.est(
+                control, t, t1, t - t1, y, y1, y2, datax
+            )
+
+            estimators_results = []
+            FDID_dict['Selected Units'] = selected_controls
+            estimators_results.append({"FDID": FDID_dict})
+
+            # Append the normal DID dictionary to the list
+            estimators_results.append({"DID": DID_dict})
+            estimators_results.append({"AUGDID": AUGDID_dict})
+
+            def round_dict_values(input_dict, decimal_places=3):
+                rounded_dict = {}
+                for key, value in input_dict.items():
+                    if isinstance(value, dict):
+                        # Recursively round nested dictionaries
+                        rounded_dict[key] = round_dict_values(value, decimal_places)
+                    elif isinstance(value, (int, float, np.float64)):
+                        # Round numeric values
+                        rounded_dict[key] = round(value, decimal_places)
+                    else:
+                        rounded_dict[key] = value
+                return rounded_dict
+
+            # Round all values in the estimators_results list of dictionaries
+            estimators_results = [
+                round_dict_values(result) for result in estimators_results
+            ]
+
+            # Add the estimators results to the overall results list
+            # results.append({"Estimators": estimators_results})
+
+            if self.display_graphs:
+                time_axis = self.df[self.df[self.unitid] == treated_unit_name][self.time].values
+                intervention_point = self.df.loc[self.df[self.treated] == 1, self.time].min()
+                n = np.arange(1, t+1)
+                fig = plt.figure(figsize=self.figsize)
+
+                plt.plot(
+                    n,
+                    y,
+                    color=self.treated_color,
+                    label="Observed " + treated_unit_name,
+                    linewidth=3
+                )
+                plt.plot(
+                    n[: t1],
+                    y_FDID[: t1],
+                    color=self.counterfactual_color,
+                    linewidth=3,
+                    label="FDID " + treated_unit_name,
+                )
+                plt.plot(
+                    n[t1-1:],
+                    y_FDID[t1-1:],
+                    color=self.counterfactual_color,
+                    linestyle="--",
+                    linewidth=2.5,
+                )
+                plt.axvline(
+                    x=t1,
+                    color="#ed2939",
+                    linestyle="--", linewidth=2.5,
+                    label=self.treated + ", " + str(intervention_point),
+                )
+                upb = max(max(y), max(y_FDID))
+                lpb = min(0.5 * min(min(y), min(y_FDID)), 1 * min(min(y), min(y_FDID)))
+
+                # Set y-axis limits
+                # plt.ylim(lpb, upb)
+                plt.xlabel(self.time)
+                plt.ylabel(self.outcome)
+                plt.title("Observed " + treated_unit_name +
+                          " versus FDID " + treated_unit_name)
+                plt.grid(self.grid)
+                plt.legend()
+                plt.show()
+
+        if hasattr(self, 'placebo_option'):
+            return results
+        else:
+            return estimators_results
+
 ```
 </details>
 
@@ -1218,18 +1286,44 @@ plt.show()
 
 ```FDID``` has Anhui, Zhejiang, Beijing, Fujian, Henan, Hunan, Jiangsu, and Yunnan as the optimal controls. Already, we can see how ```FDID``` vastly improves upon the pre-intervention fit of standard DID: the pre-intervention RMSEs for FDID, DID, and AUGDID are respectively 102, 736, and 329. Using a control group that is much more similar to Hubei in the pre-2020 period allows the trends to match much more than a naive average and an intercept would.  We can see that the standard PTA invoked by DID design may not always hold, and can lead to nonsensical results: here vanilla DID suggests Hubei's lockdown _improved_ the economy, which isn't a very sensible position to take at all. It is also intersting to note that ```FDID``` 's results are in line with some of the more flexible estimators from the ```mlsynth``` library. For example, [Robust PCA SCM](https://arxiv.org/abs/2108.12542) has an ATT of -708, and an 8 percent negative impact on the economy. The Factor Model Approach [by Li and Sonnier](https://doi.org/10.1177/00222437221137533) finds a -664 ATT and a percentage decrease of 7.5. AUGDID, as we see above, also predicted a negative effect on Hubei's GDP.
 
-Equally interesting (perhaps more) is the uncertainty analysis. FDID's confidence interval is [\-797.369,-584.822\]. DID's is [\-318.476, 1213.525\], and AUGDID's is [\-637.527, 9.252\]. I want to go further than simple nulll hypothesis testing; let's think about what these confidence intervals are actually saying in plain English. FDID says that the lockdown hurt the economy a lot (mostly in the short term). DID says that the lockdown on average helped the economy (again, which does not make sense!), but it is uncertain about how much, ranging from a relatively small decrease of 318 to a gigantic improvement of 1213. AUGDID's uncertainty is still mostly supportive of a negative impact, as well. To visualize this though, we can take the ratio of the width of the confidence intervals for each method. When we do this, we can make a plot like this
+Equally interesting (perhaps more) is the uncertainty analysis. FDID's confidence interval is [\-797.369,-584.822\]. DID's is [\-318.476, 1213.525\], and AUGDID's is [\-637.527, 9.252\]. I want to go further than simple nulll hypothesis testing; let's think about what these confidence intervals are actually saying in plain English. FDID says that the lockdown hurt the economy a lot (mostly in the short term). DID says that the lockdown on average helped the economy (again, which does not make sense!), but it is uncertain about how much, ranging from a relatively small decrease of 318 to a gigantic improvement of 1213. AUGDID's uncertainty is still mostly supportive of a negative impact, as well. To visualize this though, we can take the ratio of the width of the confidence intervals for each method. We can make a plot like this, where we divide the width of our confidence interval for DID and AUGDID by that of FDID.
+```python
+methods = ['FDID', 'DID', 'AUGDID']
+
+# Width Ratios
+widths = [1, Hubei[1]["DID"]["Inference"]["WidthRFDID"], 
+          Hubei[2]["AUGDID"]["Inference"]["WidthRFDID"]]
+
+# Plotting
+fig, ax = plt.subplots()
+
+# Plotting bar chart
+bars = ax.bar(methods, widths, capsize=5, color=['blue', 'grey', 'red'])
+
+# Labeling
+ax.set_ylabel('Width Ratio')
+ax.set_title('Uncertainty Comparison')
+
+# Label the heights on top of each bar
+for bar in bars:
+    yval = bar.get_height()
+    plt.text(bar.get_x() + bar.get_width()/2, yval + 0.01, round(yval, 3), ha='center', va='bottom')
+
+plt.grid(False)
+
+# Show the plot
+plt.show()
+```
 
 <p align="center">
   <img src="HubeiWidth.png" alt="Alt Text" width="50%">
 </p>
-
-
+The plot above gives the ratios, where of course FDID's will always be 1. DID's confidence intervals are 7.2 times wider than those of FDID! AUGDID's are 3.04 times wider than FDID's. In other words, classic DID is 7 times less certain about the empirical effect than FDID. This fact again illustrates the value of the machine-learning extension of the Forward Selection method. Having this extension does not simply make the effect size less biased, it makes the uncertainty around the effect size more precise. Had we relied simply on DID, not only would we get wrong conclusions in terms of the effect, but we would be very uncertain about the direction or scale of it.
 
 Note however the FDID has use restrictions of its own. To directly quote the FDID paper,
 > If an intercept adjusted treatment unit is outside the range of the control units (e.g., the treatment’s outcome has an upward trend that is steeper than that of all the control units’ outcomes), then this assumption will be violated because no subset of control units can trace the steeper upward trend of the treatment unit. In such a case, the Forward DID method should not be applied, and researchers should consider alternative methods, such as factor model based methods, modified synthetic control methods, or the augmented difference-in-differences method.
 
-Hubei does not have the highest or lowest GDP at any point in the time-series, so we would expect FDID to be feasible here. This aside, I should emphasize that the parallel trends assumption itself does not change: we're still presuming that a pure average of certain controls plus an intercept would do a better job at predicting the counterfactual. The key difference is that the plausibility of this assumption depends on the donor pool we have, which is the point of the forward-selection method. There are good reasons in many cases to imagine an interactive fixed effects model might be more plausible or realstic than the two-way fixed effects model present in (F)DID.
+Hubei does not have the highest or lowest GDP at any point in the time-series, and nor does ti ahve the steepest trend, so we would expect FDID to be feasible here. This aside, I should emphasize that the parallel trends assumption itself does not change: we're still presuming that a pure average of certain controls plus an intercept would do a better job at predicting the counterfactual. The key difference is that the plausibility of this assumption **depends** on the donor pool we use. There are good reasons in many cases to imagine an interactive fixed effects model might be more plausible or realstic than the two-way fixed effects model present in (F)DID, a data generating process often used in the theoretical justification of the synthetic control method.
 
 It is my hope that in making my code public we can put more of these advanced econometric methods to use for real policy analysis. The benefit is not simply because they're advanced, but because they improve the accuracy of our estimates with a few simple adjustments to standard econometric techniques. This is an ongoing project; any feedback or comments are most welcome!
 
