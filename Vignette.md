@@ -59,6 +59,7 @@ class FDID:
                  treated_color="black",
                  filetype="png",
                  display_graphs=True,
+                 placebo=None
                  ):
         self.df = df
         self.unitid = unitid
@@ -73,8 +74,32 @@ class FDID:
 
         self.filetype = filetype
         self.display_graphs = display_graphs
+
+        # Check for the "placebo" option
+        if placebo is not None:
+            self.validate_placebo_option(placebo)
+            self.placebo_option = placebo
+
+    def validate_placebo_option(self, placebo):
+        # Check if the provided placebo option is a dictionary
+        if not isinstance(placebo, dict):
+            raise ValueError("The 'placebo' option must be a dictionary.")
+
+        # Check for the first key in the dictionary
+        first_key = next(iter(placebo), None)
+        if first_key not in ["Time", "Space"]:
+            raise ValueError(
+                "The first key in the 'placebo' option must be either 'Time' or 'Space'.")
+
+        # If the first key is "Time", check if the associated value is a list of positive integers
+        if first_key == "Time":
+            values = placebo[first_key]
+            if not (isinstance(values, list) and all(isinstance(num, int) and num > 0 for num in values)):
+                raise ValueError(
+                    "If the first key in the 'placebo' option is 'Time', the associated value must be a list of positive integers.")
+
 ```
-The user specifies the dataframe they wish to use, as well as the 4 columns I just mentioned. The user may also customize, should they specify to see graphs, the colors of the trend lines for the observed and FDID predictions.
+The user specifies the dataframe they wish to use, as well as the 4 columns I just mentioned. The user may also customize, should they specify to see graphs, the colors of the trend lines for the observed and FDID predictions. I also allow for in-time placebo estimates (to be expanded on at a later date).
 
 The FDID class makes a few assumptions about ones data structure. Firstly, it presumes that the user has a long panel dataset of 4 columns, where we have one column for the outcomes, one column for the time, one column of unit names, and one column for the treatment indicator, which in this case is 0 for all periods untreated, and 1 for the treated unit during the treatment period. The code does not do so now, but in future iterations it will test to see that all of these are true.
 ```python
