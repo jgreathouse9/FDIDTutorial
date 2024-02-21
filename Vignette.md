@@ -1327,6 +1327,8 @@ Hubei does not have the highest or lowest GDP at any point in the time-series, a
 
 Students of econometrics may complain that this comparison is unfair to DID,, saying "Well, this is why we typically incorporate covariates into our analysis. We usually include variables that may predict the intervention and outcome, thereby allowing for a _conditional_ PTA instead of the outcome-only variant. And I agree, this is more plausible than the standard PTA. However, consider the fact that FDID attains superior fit and tighter confidence intervals without needing any predictors at all in these cases compared to DID. Indeed, we can imagine cases where differential privacy must be preserved, or where attaining covariates simply is not possible financially or practically. If all we have to rely on is outcome data, it is valuable to researchers in policy or business to have a robust counterfactual estimator which does not need predictors to work well. This certainly does not mean that we cannot (or should not) incorporate predictors into FDID. It does mean, however, that such predictors frequently needed (by DID, the standard synthetic control method, and others) are rendered _supplementary_ as opposed to being necessary for proper estimation.
 
+# Conclusion
+
 It is my hope that in making my code public we can put more of these advanced econometric methods to use for causal analysis. The benefit is not simply because they're advanced, but because they improve the accuracy of our estimates with a few simple adjustments to standard econometric techniques. This is an ongoing project; any feedback or comments are most welcome!
 
 # Contact
