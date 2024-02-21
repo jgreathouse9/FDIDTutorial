@@ -1173,63 +1173,63 @@ model = FDID(df=df,
              treat=treat,
              display_graphs=False, figsize=(12, 8),
              counterfactual_color='#7DF9FF')
-final_list = model.fit()
 
-# Plotting observed values only once
-observed_values = None
+Hubei = model.fit()
 
-methods_to_plot = ['DID', 'FDID']
+observed_unit = Hubei[0]["FDID"]["Vectors"]["Observed Unit"]
+FDID_unit = Hubei[0]["FDID"]["Vectors"]["Counterfactual"]
 
-# Get our quarter names
-quarters = sorted(df['Quarter'].unique())
+DID_unit = Hubei[1]["DID"]["Vectors"]["Counterfactual"]
+treatdate = Hubei[2]["AUGDID"]["Fit"]["T0"]
 
-# Set the figure size before the loop
-plt.figure(figsize=(12, 7))
 
-# Plotting observed values and the (F)DID counterfactuals
+# Plotting
+plt.figure(figsize=(10, 6))
+plt.plot(observed_unit,
+         label='Observed Hubei',
+         linestyle='-', color='black', linewidth=3)
+plt.plot(DID_unit, label='DID Hubei',
+         linestyle='-', color='red', linewidth=1.5)
 
-for method_name in methods_to_plot:
-    method_data = [entry[method_name] for entry in final_list if method_name in entry]
-    if method_data:
-        method_data = method_data[0]  # Take the first occurrence if present
+plt.plot(FDID_unit, label='FDID Hubei',
+         linestyle='-', color='blue', linewidth=1.5)
 
-        if observed_values is None:
-            observed_values = method_data['Vectors']['Observed Unit'].flatten()
-            plt.plot(quarters, observed_values, label='Observed Hubei', color='black')
+plt.xlabel(time)
+plt.ylabel(outcome)
+plt.title('Reality versus Predictions')
 
-        unit_values = method_data['Vectors']['DID Unit'].flatten()
-        # Set color for FDID method
-        color = '#7DF9FF' if method_name == 'FDID' else 'red'
+plt.axvline(x=treatdate, color='black', linestyle='--',
+            linewidth=1, label=f'{treat}, {treatdate}')
 
-        plt.plot(quarters, unit_values, label=f'{method_name} Unit', color=color)
-intervention_time = df[df["Lockdown"] == 1]["Quarter"].iloc[0]
-intervention_time_formatted = intervention_time.strftime('%YQ%m')
 
-plt.axvline(x=intervention_time, color='black', linestyle='--', label=f'Lockdown, {intervention_time_formatted}')
-
-plt.xlabel('Quarter')
-plt.ylabel('GDP')
 plt.legend()
-plt.title('Observed, FDID, and DID Hubei')
+
 plt.show()
 
-fdid_selected_units = [item['FDID']['Selected Units'] for item in final_list if 'FDID' in item]
-print("Selected Units:", fdid_selected_units)
 
 ```
 <p align="center">
-  <img src="HubeiPlot.png" alt="Alt Text" width="50%">
+  <img src="HubeiPlot2.png" alt="Alt Text" width="50%">
 </p>
 
 - FDID ATT: -691.096, Percent ATT: -7.815
 - DID ATT: 447.525, Percent ATT: 5.808
 - AUGDID ATT: -314.138, Percent ATT: -3.71
 
-```FDID``` has Anhui, Zhejiang, Beijing, Fujian, Henan, Hunan, Jiangsu, and Yunnan as the optimal controls. Already, we can see how ```FDID``` vastly improves upon the pre-intervention fit of standard DID. Using a control group that is much more similar to Hubei in the pre-2020 period allows the trends to match much more than a naive average and an intercept would. Note however the FDID has use restrictions of its own. To directly quote the FDID paper,
+```FDID``` has Anhui, Zhejiang, Beijing, Fujian, Henan, Hunan, Jiangsu, and Yunnan as the optimal controls. Already, we can see how ```FDID``` vastly improves upon the pre-intervention fit of standard DID: the pre-intervention RMSEs for FDID, DID, and AUGDID are respectively 102, 736, and 329. Using a control group that is much more similar to Hubei in the pre-2020 period allows the trends to match much more than a naive average and an intercept would.  We can see that the standard PTA invoked by DID design may not always hold, and can lead to nonsensical results: here vanilla DID suggests Hubei's lockdown _improved_ the economy, which isn't a very sensible position to take at all. It is also intersting to note that ```FDID``` 's results are in line with some of the more flexible estimators from the ```mlsynth``` library. For example, [Robust PCA SCM](https://arxiv.org/abs/2108.12542) has an ATT of -708, and an 8 percent negative impact on the economy. The Factor Model Approach [by Li and Sonnier](https://doi.org/10.1177/00222437221137533) finds a -664 ATT and a percentage decrease of 7.5. AUGDID, as we see above, also predicted a negative effect on Hubei's GDP.
+
+Equally interesting (perhaps more) is the uncertainty analysis. FDID's confidence interval is [\-797.369,-584.822\]. DID's is [\-318.476, 1213.525\], and AUGDID's is [\-637.527, 9.252\]. I want to go further than simple nulll hypothesis testing; let's think about what these confidence intervals are actually saying in plain English. FDID says that the lockdown hurt the economy a lot (mostly in the short term). DID says that the lockdown on average helped the economy (again, which does not make sense!), but it is uncertain about how much, ranging from a relatively small decrease of 318 to a gigantic improvement of 1213. AUGDID's uncertainty is still mostly supportive of a negative impact, as well. To visualize this though, we can take the ratio of the width of the confidence intervals for each method. When we do this, we can make a plot like this
+
+<p align="center">
+  <img src="HubeiWidth.png" alt="Alt Text" width="50%">
+</p>
+
+
+
+Note however the FDID has use restrictions of its own. To directly quote the FDID paper,
 > If an intercept adjusted treatment unit is outside the range of the control units (e.g., the treatment’s outcome has an upward trend that is steeper than that of all the control units’ outcomes), then this assumption will be violated because no subset of control units can trace the steeper upward trend of the treatment unit. In such a case, the Forward DID method should not be applied, and researchers should consider alternative methods, such as factor model based methods, modified synthetic control methods, or the augmented difference-in-differences method.
 
 Hubei does not have the highest or lowest GDP at any point in the time-series, so we would expect FDID to be feasible here. This aside, I should emphasize that the parallel trends assumption itself does not change: we're still presuming that a pure average of certain controls plus an intercept would do a better job at predicting the counterfactual. The key difference is that the plausibility of this assumption depends on the donor pool we have, which is the point of the forward-selection method. There are good reasons in many cases to imagine an interactive fixed effects model might be more plausible or realstic than the two-way fixed effects model present in (F)DID.
-It is also intersting to note that these results are in line with some of the more flexible estimators from the ```mlsynth``` library. For example, [Robust PCA SCM](https://arxiv.org/abs/2108.12542) has an ATT of -708, and an 8 percent negative impact on the economy. The Factor Model Approach [by Li and Sonnier](https://doi.org/10.1177/00222437221137533) finds a -664 ATT and a percentage decrease of 7.5. AUGDID, as we see above, also predicted a negative effect on Hubei's GDP. I should note that this is _not_ meant to be a formal comparison of these methods, which would actually be quite interesting. However, it _does_ illustrate the fact that the standard parallel trends assumption invoked in the classic DID design may not always hold, and doing so may lead to nonsensical results; here vanilla DID suggests Hubei's lockdown _improved_ the economy, which isn't a very sensible position to take.
 
 It is my hope that in making my code public we can put more of these advanced econometric methods to use for real policy analysis. The benefit is not simply because they're advanced, but because they improve the accuracy of our estimates with a few simple adjustments to standard econometric techniques. This is an ongoing project; any feedback or comments are most welcome!
 
