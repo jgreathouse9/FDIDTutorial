@@ -1358,5 +1358,5 @@ Students of econometrics may complain that this comparison is unfair to DID,, sa
 It is my hope that in making my code public we can put more of these advanced econometric methods to use for causal analysis. The benefit is not simply because they're advanced, but because they improve the accuracy of our estimates with a few simple adjustments to standard econometric techniques. This is an ongoing project; any feedback or comments are most welcome!
 
 # Contact
-- [Jared Greathouse](jgreathouse3@student.gsu.edu)
-- [Kathy Li](kathleen.li@mccombs.utexas.edu)
+- Jared Greathouse: <jgreathouse3@student.gsu.edu>
+- Kathy Li: <kathleen.li@mccombs.utexas.edu>
