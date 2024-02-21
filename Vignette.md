@@ -1106,9 +1106,10 @@ model = FDID(df=df,
              time=time,
              outcome=outcome,
              treat=treat,
-             display_graphs=True, figsize=(12, 6),
+             display_graphs=False, figsize=(13, 8),
              counterfactual_color='#7DF9FF')
-estimators_results = model.fit()
+
+HKRes = model.fit()
 ```
 
 The model prints the plot by itself, but we can also extract these results as follows
