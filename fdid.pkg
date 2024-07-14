@@ -1,0 +1,18 @@
+v 3
+d fdid: Stata module to estimate forward difference in differences
+d
+d
+d {cmd:fdid} estimates treatment effects using the method documented in "Frontiers: A Simple Forward Difference in Differences Method".
+d
+d KW: difference in differences
+d KW: causal inference
+d
+d Requires: Stata version 16
+d
+d Distribution-Date: 20240714
+d
+d Author: Jared Greathouse
+d Support: email jgreathouse3@student.gsu.edu
+d
+f fdid.ado
+f fdid.sthlp
