@@ -1,0 +1,2 @@
+v 3
+p fdid Stata module to estimate forward difference in differences.
