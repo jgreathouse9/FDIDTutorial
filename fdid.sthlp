@@ -121,21 +121,25 @@ A macro containing the list of selected units chosen by the forward selection al
 
 {phang}
 
+Users may install {cmd:fdid} like {cmd:net install fdid, from("https://raw.githubusercontent.com/jgreathouse9/FDIDTutorial/main") replace}.
+
+To obtain the data files, we do: {cmd: net get fdid, from("https://raw.githubusercontent.com/jgreathouse9/FDIDTutorial/main") replace}.
+
 
 // Replicating HCW2012
 
-u hcw, clear
+{cmd:u hcw, clear}
 
-qui fdid gdp, tr(treat) unitnames(state) gr1opts(scheme(sj) name(hcw, replace))
+{cmd:fdid gdp, tr(treat) unitnames(state) gr1opts(scheme(sj) name(hcw, replace))}
 
 {phang}
 
 // Replicating Abadie and Gardeazabaal 2003
 
-u "agbasque.dta", clear
+{cmd:u "agbasque.dta", clear}
 
 
-qui fdid gdpcap, tr(treat) gr1opts(scheme(sj) name(ag, replace))
+{cmd:fdid gdpcap, tr(treat) gr1opts(scheme(sj) name(ag, replace))}
 
 
 {hline}
