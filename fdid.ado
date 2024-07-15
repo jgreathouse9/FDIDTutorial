@@ -826,7 +826,7 @@ yli(0, lpat(-)) xli(0, lwidth(vthin)) name(gap`treatst', replace) `gr2opts'
 }
 
 loc rmseround: di %9.5f `RMSE'
-
+keep eventtime te `treated_unit' cf
 qui mkmat *, mat(series)
 scalar tstat = abs(scalar(ATT)/scalar(SE))
 tempname my_matrix
