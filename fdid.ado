@@ -814,7 +814,7 @@ scalar CILB = scalar(ATT) - (((invnormal(0.975) * scalar(ohat)))/sqrt(scalar(t2)
 
 scalar CIUB =  scalar(ATT) + (((invnormal(0.975) * scalar(ohat)))/sqrt(scalar(t2)))
 
-scalar SE = (invnormal(0.975) * scalar(ohat))/sqrt(scalar(t2))
+
 
 if "`gr2opts'" != "" {
 
@@ -826,9 +826,12 @@ yli(0, lpat(-)) xli(0, lwidth(vthin)) name(gap`treatst', replace) `gr2opts'
 }
 
 loc rmseround: di %9.5f `RMSE'
-keep eventtime te `treated_unit' cf
+qui keep eventtime te `treated_unit' cf
 qui mkmat *, mat(series)
-scalar tstat = abs(scalar(ATT)/scalar(SE))
+
+scalar SE = scalar(ohat)/sqrt(scalar(t2))
+scalar tstat = abs(scalar(ATT)/(scalar(SE)))
+
 tempname my_matrix
 matrix `my_matrix' = (scalar(ATT), scalar(SE), scalar(tstat), scalar(CILB), scalar(CIUB), scalar(r2), `rmseround')
 matrix colnames `my_matrix' = ATT SE t LB UB R2 RMSE
@@ -840,10 +843,10 @@ ereturn mat ATTs = `my_matrix'
 
 ereturn mat series = series
 
-//keep `time' `treated_unit' cf te eventtime
 
+scalar ATT_std_DID = scalar(t2) * scalar(ATT) / scalar(ohat)
 
-scalar p_value = 2 * (1 - normal(scalar(tstat)))
+scalar p_value = 2 * (1 - normal(scalar(ATT_std_DID)))
 
 local tabletitle "Forward Difference-in-Differences"
 
@@ -855,7 +858,7 @@ di as text %12s abbrev("`treatment'",12) " {c |} " as result %9.5f scalar(ATT) "
 di as text "{hline 13}{c BT}{hline 77}"
 di as txt "Treated Unit: `treatst'"
 di as res "FDID selects `controls' as the optimal donors."
+di as text "Standard Errors are Newey-West Standard Errors."
 di as text "See Li (2024) for technical details."
-
 
 end
