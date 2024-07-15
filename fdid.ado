@@ -1,6 +1,7 @@
 *****************************************************
 set more off
 set varabbrev off
+
 *****************************************************
 
 * Programmer: Jared A. Greathouse
@@ -25,7 +26,6 @@ set varabbrev off
 * 2. Program
 
 prog define fdid, rclass
-
 
 cap frame drop __reshape
 qui frame 
@@ -70,6 +70,15 @@ _xtstrbal `panel' `time' `touse'
    /* if unitname specified, grab the label here */
 if "`unitnames'" != "" {
 	
+	local curframe = c(frame)
+	
+
+cap frame drop __dfcopy
+
+frame copy `curframe' __dfcopy
+
+	cwf __dfcopy
+	
     
 	qui levelsof `panel',local(levp)
    	
@@ -109,7 +118,7 @@ if "`: value label `panel''" == "" & "`unitnames'" == ""  {
 	
 	di as err "Your panel variable NEEDS to have a value label attached to it."
 	
-	di as err "Either specify -unitnames- or pre-assign your panel id with string IDs."
+	di as err "Either specify -unitnames- or pre-assign your panel id with string value labels."
 	
 	exit 198
 }
@@ -136,19 +145,20 @@ local tr_lab: variable lab `treated'
 
 qui levelsof `panel' if `treated'==1, loc(trunit)
 
-local len_x : word count `trunit'
+local nwords :  word count `trunit'
 
-cap as `len_x'==1
 
-if _rc !=0 {
-di as err "At the moment, FDID only supports 1 treated unit"
-exit 498
-}
 
 foreach x of loc trunit {
+	
+local curframe = c(frame)
 
-qui frame copy `originalframe' __dfcopy
+cap frame drop __dfcopy
 
+if "`curframe'" != "__dfcopy" {
+
+frame copy `curframe' __dfcopy
+}
 frame __dfcopy {
 
 
@@ -156,9 +166,14 @@ loc trunitstr: display "`: label (`panel') `x''"
 
 if "`cfframename'" == "" {
 	
-	cap frame drop fdid_cfframe
+	cap frame drop fdid_cfframe`x'
 	
-	loc defname fdid_cfframe
+	loc defname fdid_cfframe`x'
+}
+
+else if `nwords' > 1 {
+	
+	loc defname `cfframename'`x'
 }
 
 else {
@@ -166,13 +181,11 @@ else {
 	loc defname `cfframename'
 }
 
-
-
 numcheck, unit(`panel') ///
 	time(`time') ///
 	transform(`transform') ///
 	depvar(`depvar') /// Routine 1
-	treated(`treated') cfframe(`defname')
+	treated(`treated') cfframe(`defname') trnum(`x')
 
 
 // Routine 2
@@ -183,13 +196,6 @@ treatprocess, time(`time') ///
 	
 loc trdate = e(interdate)
 
-
-//Routine 3
-
-data_org, unit(`panel') ///
-	time(`time') ///
-	depvar(`depvar') ///
-	treated(`treated')
 	
 /**********************************************************
 
@@ -210,10 +216,12 @@ est_dd, time(`time') ///
 	treatst(`trunitstr') ///
 	panel(`panel') ///
 	outcome(`depvar') ///
-	trnum(`trunit') treatment(`treated') ///
+	trnum(`x') treatment(`treated') ///
 	cfframe(`defname')
 	
 }
+
+if `nwords'==1 {
 
 loc optimalcontrols: di e(selected)
 mat resmat =e(ATTs)
@@ -223,6 +231,62 @@ mat series = e(series)
 return mat series= series
 ereturn clear
 }
+}
+
+if `nwords' > 1 {
+
+qui frame dir
+
+loc currframes `r(frames)'
+
+loc test1 `originalframe'
+
+local predictors: list currframes- test1
+mkf multiframe
+
+cwf multiframe
+
+foreach x of loc predictors {
+
+frame `x' {
+	
+tempfile frame
+
+qui sa `frame'
+}
+qui append using `frame'
+}
+
+qui keep te eventtime
+qui drop if te ==.
+
+qui mkmat eventtime te, mat(series)
+return mat series= series
+
+qui su te if eventtime >= 0
+
+
+
+scalar ATT = r(mean)
+scalar TATT = r(sum)
+
+tempname my_matrix
+
+matrix `my_matrix' = (scalar(ATT), scalar(TATT))
+matrix colnames `my_matrix' = ATT TATT
+
+matrix rownames `my_matrix' = Effects
+
+
+return mat results =`my_matrix'
+
+
+ereturn clear
+
+}
+cwf `originalframe'
+
+qui frame drop __dfcopy
 end
 
 /**********************************************************
@@ -238,7 +302,7 @@ syntax, ///
 	time(varname) ///
 	depvar(varname) ///
 	[transform(string)] ///
-	treated(varname) cfframe(string)
+	treated(varname) cfframe(string) trnum(numlist min=1 max=1 >=1 int)
 	
 		
 /*#########################################################
@@ -284,9 +348,9 @@ without the maximum number of observations (unbalanced) */
 		exit 498
 	}
 	
-qui levelsof `unit' if `treated'==1, loc(treated_unit)
 
-qui frame put `time' if `unit' == `treated_unit', into(`cfframe')
+
+frame put `time' if `unit' == `trnum', into(`cfframe')
 	
 end
 
@@ -344,9 +408,9 @@ loc npp = r(N)
 		//display "Treatment is measured from " `time_format' `interdate' " to " `time_format'  `last_date' " (`npp' pre-periods)"
 		
 		
-		qui distinct `unit' if `treated' == 0
+		qui su `unit' if `treated' == 0
 		
-		loc dp_num = r(ndistinct) - 1
+		loc dp_num = r(N) - 1
 		
 		cap as `dp_num' >= 2
 		if _rc {
@@ -355,60 +419,10 @@ loc npp = r(N)
 		exit 489
 		}
 		//di as res "{hline}"
-/*
-		di "{txt}{p 15 50 0} Treated Unit: {res}`adidtreat_lab' {p_end}"
-		di as res "{hline}"
-		di "{txt}{p 15 30 0} Control Units: {res}`dp_num' total donor pool units{p_end}"
-		di as res "{hline}"
-		di "{txt}{p 15 30 0} Specifically: {res}`controls'{p_end}"
-*/
 
 	}	
 
 ereturn loc interdate = `interdate'
-
-
-end
-
-
-
-
-prog data_org, eclass
-        
-syntax, time(varname) depvar(varname) unit(varname) treated(varname)
-
-/*#########################################################
-
-	* Section 1.3: Reorganizing the Data into Matrix Form
-
-	We need a wide dataset to do what we want.
-*########################################################*/
-
-qui su `unit' if `treated' ==1, mean
-
-loc treat_id = `r(mean)'
-
-qui su `time' if `treated' ==1
-
-keep `unit' `time' `depvar'
-
-local curframe = c(frame)
-
-tempname __reshape
-
-frame copy `curframe' __reshape
-
-cwf __reshape
-
-qui reshape wide `depvar', j(`unit') i(`time')
-
-qui: tsset `time'
-loc time_format: di r(tsfmt)
-
-
-format `time' `time_format'
-
-order `depvar'`treat_id', a(`time')
 
 
 end
@@ -429,6 +443,33 @@ syntax, ///
 	outcome(string asis) ///
 	trnum(numlist min=1 max=1 >=1 int) ///
 	treatment(string) [outlab(string asis)] cfframe(string)
+
+	
+local curframe = c(frame)
+
+tempname __reshape
+
+frame copy `curframe' `__reshape'
+
+cwf `__reshape'
+
+
+qbys `panel': egen et = max(`treatment')
+
+qui keep if et ==0 | `panel'==`trnum'
+
+keep `panel' `time' `outcome'
+
+
+qui reshape wide `outcome', j(`panel') i(`time')
+
+qui: tsset `time'
+loc time_format: di r(tsfmt)
+
+
+format `time' `time_format'
+
+order `outcome'`trnum', a(`time')
 
 qui ds
 
@@ -467,8 +508,11 @@ di ""
     dis "Selecting the optimal donors via Forward Selection..."
     dis "----+--- 1 ---+--- 2 ---+--- 3 ---+--- 4 ---+--- 5"
 
-qui while ("`predictors'" != "") {
     
+    
+
+while ("`predictors'" != "") {
+
 scalar `max_r2' = 0
 
 	foreach var of local predictors {
@@ -478,7 +522,7 @@ scalar `max_r2' = 0
 	cap drop rss
 	cap drop tss
 
-		quietly {
+		 {
 			
 		// We take the mean of each element of set U and each new predictor.
 			
@@ -494,12 +538,13 @@ scalar `max_r2' = 0
 		 * 45 is the treatment date for HongKong, but this will be
 		 * any date as specified by the treat variable input by the
 		 * user.
+		 
 		    
-		cnsreg `treated_unit' `ym' if `time' < `interdate' , constraint(1)
+		qui cnsreg `outcome'`trnum' `ym' if `time' < `interdate' , constraint(1)
 		    
 		// We predict our counterfactual
 		    
-		predict `cfp' if e(sample)
+		qui predict `cfp' if e(sample)
 		
 		// Now we calculate the pre-intervention R2 statistic.
 
@@ -520,8 +565,10 @@ scalar `max_r2' = 0
 
 		loc r2 = 1 - (`RSS' / `TSS')
 
+
 		    
 		    if `r2' > scalar(`max_r2') {
+		    	
 			
 			scalar `max_r2' = `r2'
 			local new_U `var'
@@ -545,6 +592,11 @@ scalar `max_r2' = 0
 	// and get rid of it from the predictors list.
 
 	local predictors : list predictors - new_U
+	
+	    if `r2' < 0 {
+
+        continue, break
+    }
 
 }
 
@@ -622,9 +674,9 @@ qui drop ymean cf tss rss
 
 cwf `cfframe'
 
-qui frlink 1:1 `time', frame(__reshape)
+qui frlink 1:1 `time', frame(`__reshape')
 
-qui frget `treated_unit' `best_model', from(__reshape)
+qui frget `treated_unit' `best_model', from(`__reshape')
 
 //di as txt "{hline}"
 
@@ -678,7 +730,7 @@ if "`outlab'"=="" {
 twoway (connected `treated_unit' `time', connect(direct) msymbol(smdiamond)) (connected cf `time', lpat(--) msymbol(smsquare)), ///
 yti(`treatst' `outlab') ///
 legend(order(1 "Observed" 2 "FDID") pos(12)) ///
-xli(`interdate', lcol(gs6) lpat(--)) `gr1opts'
+xli(`interdate', lcol(gs6) lpat(--)) name(fit`treatst', replace) `gr1opts'
 }
 
 
@@ -709,6 +761,10 @@ forv i = 1/`nwords' {
     
     loc controls: display "`selected'"
     
+    qui note: The selected units are "`selected'"
+
+
+    
 
     
 }
@@ -730,30 +786,6 @@ scalar `t1' = r(N)
 g te = `treated_unit' - cf
 lab var te "Pointwise Treatment Effect"
 qui g eventtime = `time'-`interdate'
-
-/*
-cwf fdid_cfframe
-
-g residsq = te^2 if eventtime <0
-su residsq, mean
-cls
-scalar o1hat=(17 / 44)*(r(mean))
-di `o1hat'
-// 0.00010130090173830751
-
-su residsq, mean
-scalar o2hat = (r(mean))
-di scalar(o2hat)
-// 0.00026219056920503124
-
-scalar ohat = sqrt(scalar(o1hat)+scalar(o2hat))
-// 0.019065452287930093
-di scalar(ohat)
-
-di 0.025 - (((invnormal(0.975) * scalar(ohat)))/sqrt(17))
-
-di 0.025 + (((invnormal(0.975) * scalar(ohat)))/sqrt(17))
-*/
 
 
 qui g residsq = te^2 if eventtime <0
@@ -790,31 +822,25 @@ if "`gr2opts'" != "" {
 
 twoway (connected te eventtime, connect(direct) msymbol(smdiamond)), ///
 yti("Pointwise Treatment Effect") ///
-yli(0, lpat(-)) xli(0, lwidth(vthin)) `gr2opts'
+yli(0, lpat(-)) xli(0, lwidth(vthin)) name(gap`treatst', replace) `gr2opts'
 }
 
 loc rmseround: di %9.5f `RMSE'
 
 qui mkmat *, mat(series)
 scalar tstat = abs(scalar(ATT)/scalar(SE))
+tempname my_matrix
+matrix `my_matrix' = (scalar(ATT), scalar(SE), scalar(tstat), scalar(CILB), scalar(CIUB), scalar(r2), `rmseround')
+matrix colnames `my_matrix' = ATT SE t LB UB R2 RMSE
 
-matrix my_matrix = (scalar(ATT), scalar(SE), scalar(tstat), scalar(CILB), scalar(CIUB), scalar(r2), `rmseround')
-matrix colnames my_matrix = ATT SE t LB UB R2 RMSE
-
-matrix rownames my_matrix = Statistics
+matrix rownames `my_matrix' = Statistics
 
 ereturn loc selected "`controls'"
-ereturn mat ATTs = my_matrix
+ereturn mat ATTs = `my_matrix'
 
 ereturn mat series = series
 
-keep `time' `treated_unit' cf te eventtime
-
-
-frame drop __dfcopy
-frame drop __reshape
-
-
+//keep `time' `treated_unit' cf te eventtime
 
 
 scalar p_value = 2 * (1 - normal(scalar(tstat)))

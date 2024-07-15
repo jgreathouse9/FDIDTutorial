@@ -27,7 +27,9 @@
 {synoptline}
 {syntab:Requirements}
 {synopt:{opt depvar}}The outcome of interest. {p_end}
-{synopt:{opt treated}}Our treatment variable. {p_end}
+{synopt:{opt treated}}Our treatment variable. It must be a 0 1 dummy. Note that {cmd:fdid} supports settings
+where we have multiple treated units. Under the hood,
+it keeps all never treated units and estimates the treatment effect for each treated unit. {p_end}
 {synoptline}
 {p2colreset}{...}
 {p 4 6 2}
@@ -43,9 +45,7 @@ for settings where we have one treated unit and multiple control units.
 It uses an iterative forward selection algorithm to select the optimal
 control group. After selecting the optimal control group, {cmd:fdid} calculates the treatment effect
 along with confidence intervals. Note that the dependent variable must be numeric, 
-non-missing and non-constant. The {opt tr:eated} variable must be a dummy
-variable equal to one when the unit is treated, else 0.
-{cmd: fdid} requires the data to be {cmd: xtset} and balanced.
+non-missing and non-constant. {cmd: fdid} requires the data to be {cmd: xtset} and balanced.
 
 
 {marker options}{...}
@@ -69,24 +69,21 @@ Note that each string value pair must be uniquely identified.
 
 {phang}
 {opt cfframename}: The name of the data frame containing the counterfactual, treatment effect, and observed values.
-If nothing is specified, the name by default is {it:fdid_cfframe}.
+If nothing is specified, the name by default is {it:fdid_cfframe}, with the panel id as a suffix.
 
 {marker remarks}{...}
 {title:Remarks}
 
 {pstd}
 For theoretical justification and more details on the method overall, see ({browse "https://doi.org/10.1287/mksc.2022.0212":the original paper}).
-Note, that in theory we may extend {cmd: fdid} to situations where there are many treated units at different points in time. However, at the moment
-{cmd: fdid} only supports settings where there's one treated unit. As a workaround, assuming the treatment period begins at the same time for all units,
-the user may iteratively estimate treatment effects for each treated unit (omitting the other treated units from the control group) and then
-take the average of their treatment effects and confidence intervals.
 
 {synoptline}
 
 {title:Saved Results}
 
 {p 4 8 2}
-{cmd:fdid} returns the following results, which 
+{cmd:fdid} returns different results depending on the setup of treatment.
+When only one unit is treated, {cmd:fdid} returns the following results which 
 can be displayed by typing {cmd: return list} after 
 {cmd: fdid} is finished (also see {help return}).  
 
@@ -106,14 +103,34 @@ A matrix containing the time, observed values, counterfactual values, pointwise 
 {p 10 10 2}
 A macro containing the list of selected units chosen by the forward selection algorithm.
 
+{p 4 8 2}
+If there are many treated units, {cmd:fdid} returns the following:
+
+{p 8 8 2}
+{cmd: r(series):}{p_end}
+{p 10 10 2}
+A matrix containing the event time variable and pointwise treatment effect variable for each treated unit.
+
+{p 8 8 2}
+{cmd: r(results):}{p_end}
+{p 10 10 2}
+A matrix containing the ATT and total treatment effect.
+
 {synoptline}
 
 {title:Frames}
 {p 4 8 2}
-{cmd:fdid} returns a frame for the user's convenience.
+{cmd:fdid} returns frames for the user's convenience. If there's one treated unit, we have:
+
+{p 10 10 2}
+{cmd:fdid_cfframe}: Contains the outcome vector for the treated unit, the counterfactual vector, the time period, and the pointwise treatment effect.
 
 {p 4 8 2}
-{cmd:fdid_cfframe}: Contains the outcome vector for the treated unit, the counterfactual vector, the time period, and the pointwise treatment effect.
+If many units are treated, we have:
+
+{p 10 10 2}
+{cmd:multiframe}: Contains the treatment effect variable for all treated units as well as as the event time variable.
+We also keep the individual unit frames from above, for reference.
 
 
 {marker examples}{...}
@@ -126,7 +143,7 @@ Users may install {cmd:fdid} like {cmd:net install fdid, from("https://raw.githu
 To obtain the data files, we do: {cmd: net get fdid, from("https://raw.githubusercontent.com/jgreathouse9/FDIDTutorial/main") replace}.
 
 
-// Replicating HCW2012
+Replicating HCW2012
 
 {cmd:u hcw, clear}
 
@@ -134,12 +151,22 @@ To obtain the data files, we do: {cmd: net get fdid, from("https://raw.githubuse
 
 {phang}
 
-// Replicating Abadie and Gardeazabaal 2003
+Replicating Abadie and Gardeazabaal 2003
 
 {cmd:u "agbasque.dta", clear}
 
 
 {cmd:fdid gdpcap, tr(treat) gr1opts(scheme(sj) name(ag, replace))}
+
+{phang}
+
+A fake multitreatment example:
+
+{cmd:u "hcw.dta", clear}
+
+{cmd:replace treat = 1 if state == "austria" & time >20}
+
+{cmd:fdid gdp, tr(treat) unitnames(state)}
 
 
 {hline}
