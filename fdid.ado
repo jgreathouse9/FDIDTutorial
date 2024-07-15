@@ -138,9 +138,9 @@ qui levelsof `panel' if `treated'==1, loc(trunit)
 
 local len_x : word count `trunit'
 
-cap as `trunit'==1
+cap as `len_x'==1
 
-if _rc {
+if _rc !=0 {
 di as err "At the moment, FDID only supports 1 treated unit"
 exit 498
 }
