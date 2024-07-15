@@ -136,6 +136,15 @@ local tr_lab: variable lab `treated'
 
 qui levelsof `panel' if `treated'==1, loc(trunit)
 
+local len_x : word count `trunit'
+
+cap as `trunit'==1
+
+if _rc {
+di as err "At the moment, FDID only supports 1 treated unit"
+exit 498
+}
+
 foreach x of loc trunit {
 
 qui frame copy `originalframe' __dfcopy
