@@ -1,4 +1,6 @@
-In econometrics, program evaluation is an important topic. Its application spans multiple disciplines. The simplest causal inference estimator, aside from randomzied trials, is the Difference-in-Differences estimator. I've already covered the basics of the algorithm in the Python vignette, so I will not here reinvent the wheel. So, this note simply demonstrates how to use FDID for Stata 16 and up.
+# Forward DID for Stata Users
+
+I've already covered the basics of the algorithm in [the Python vignette](https://github.com/jgreathouse9/FDIDTutorial/blob/main/Vignette.md), so I will not here reinvent the wheel. So, this note simply demonstrates how to use FDID for Stata 16 and up.
 
 First we install fdid into Stata like
 
@@ -11,6 +13,8 @@ We can get the datasets I include like
 ```stata
 net get fdid, all
 ```
+
+# HCW
 
 The one we're replicating here is [the HCW dataset](https://doi.org/10.1002/jae.1230). We begin by importing the data
 
@@ -79,6 +83,7 @@ returns
 
 Note: Frames marked with * contain unsaved data.
 ```
+## Staggered Adoption
 
 Okay let's do staggered adoption. We begin by pulling in and cleaning the smoking data.
 ```stata
@@ -127,4 +132,20 @@ r(results)[1,2]
                 ATT        TATT
 Effects  -21.150942  -592.22637
 ```
-where we have the average treatment effect on the treated and the total average treatment effect. The frame ```multiframe```, returned only when we have $N\_{\text{tr}}>1$, contains the event time effects, where users may create event study sytle plots should they wish. The matrix ```r(series)``` is the exact same thing in matrix form.
+where we have the average treatment effect on the treated and the total treatment effect. The frame ```multiframe```, returned only when we have $N\_{\text{tr}}>1$, contains the event time effects, where users may create event study sytle plots should they wish. The matrix ```r(series)``` is the exact same thing in matrix form. For those curious about the specific controls selected, these may be found in the notes. For example, for California, we can change to tis frame from the default one
+
+```stata
+frame change fdid_cfframe5
+notes
+```
+which returns
+```
+_dta:
+  1.  The selected units are "Montana, Colorado, Nevada, Connecticut,"
+```
+
+Okay, so that's it for the vignette. No doubt people will have questions, suggestions, ideas, or concerns, so you may contact me as ususal.
+
+# Contact
+- Jared Greathouse: <jgreathouse3@student.gsu.edu> (see [my website](https://jgreathouse9.github.io/))
+- Kathy Li: <kathleen.li@mccombs.utexas.edu>
