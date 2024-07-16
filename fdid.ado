@@ -852,7 +852,7 @@ ereturn mat series = series
 
 scalar ATT_std_DID = scalar(t2) * scalar(ATT) / scalar(ohat)
 
-scalar p_value = 2 * (1 - normal(scalar(ATT_std_DID)))
+scalar p_value = 2 * (1 - normal(scalar(tstat)))
 
 local tabletitle "Forward Difference-in-Differences"
 
