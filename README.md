@@ -4,4 +4,4 @@ This repository contains the Python and Stata code to estimate the Forward Diffe
 ```
 net install fdid, from("https://raw.githubusercontent.com/jgreathouse9/FDIDTutorial/main") replace
 ```
-where you may find the ancillary files with the Basque and HCW data. A Stata tutorial for FDID will also be posted soon.
+where you may find the ancillary files with the Basque and HCW data. The vignette for Stata is [here](https://github.com/jgreathouse9/FDIDTutorial/blob/main/StataVignette.md).
