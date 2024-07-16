@@ -1,6 +1,6 @@
-# Forward DID for Stata Users
+# ```fdid``` for Stata Users
 
-I've already covered the basics of the algorithm in [the Python vignette](https://github.com/jgreathouse9/FDIDTutorial/blob/main/Vignette.md), so I will not here reinvent the wheel. So, this note simply demonstrates how to use FDID for Stata 16 and up.
+I've already covered the basics of the algorithm in [the Python vignette](https://github.com/jgreathouse9/FDIDTutorial/blob/main/Vignette.md), so I will not repeat myself. This note simply demonstrates how to use FDID for Stata 16 and up. No special commands are needed to use ```fdid```.
 
 First we install fdid into Stata like
 
@@ -22,7 +22,7 @@ The one we're replicating here is [the HCW dataset](https://doi.org/10.1002/jae.
 u "hcw.dta", clear
 ```
 
-Here, we study the impact of Hobng Kong's [economic integreation](https://www.henleyglobal.com/residence-investment/hong-kong/cepa-hong-kong-china). To do this in Stata, we simply do
+Here, we study the impact of Hong Kong's [economic integreation](https://www.henleyglobal.com/residence-investment/hong-kong/cepa-hong-kong-china). To do this in Stata, we simply do
 
 ```stata
 fdid gdp, tr(treat) unitnames(state) ///
@@ -46,7 +46,12 @@ FDID selects philippines, singapore, thailand, norway, mexico, korea, indonesia,
 See Li (2024) for technical details.
 ```
 
-If we wish to see the results, we can do
+Here is the plot:
+<p align="center">
+  <img src="fithongkong.png" alt="Alt Text" width="50%">
+</p>
+
+If we wish to see the returned results, we can do
 ```stata
 
 return list
