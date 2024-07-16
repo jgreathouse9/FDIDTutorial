@@ -725,12 +725,18 @@ if "`outlab'"=="" {
 	loc outlab `outcome'
 	
 }
-	
+
+
+local fitname = "fit" + "`treatst'"
+
+local fitname_cleaned = subinstr("`fitname'", " ", "", .)
 
 twoway (connected `treated_unit' `time', connect(direct) msymbol(smdiamond)) (connected cf `time', lpat(--) msymbol(smsquare)), ///
-yti(`treatst' `outlab') ///
+yti("`treatst' `outlab'") ///
 legend(order(1 "Observed" 2 "FDID") pos(12)) ///
-xli(`interdate', lcol(gs6) lpat(--)) name(fit`treatst', replace) `gr1opts'
+xli(`interdate', lcol(gs6) lpat(--)) name(`fitname_cleaned', replace) `gr1opts'
+
+
 }
 
 
@@ -850,15 +856,18 @@ scalar p_value = 2 * (1 - normal(scalar(ATT_std_DID)))
 
 local tabletitle "Forward Difference-in-Differences"
 
+
+di as text ""
+di as text ""
 di as res "`tabletitle'"  "          " "T0 R2:" %9.3f scalar(r2) "     T0 RMSE:" %9.3f  `RMSE'
-di as text "{hline 13}{c TT}{hline 77}"
-di as text %12s abbrev("`outcome'",12) " {c |}      ATT        t           SE         [95% Conf. Interval]     p"
-di as text "{hline 13}{c +}{hline 77}"
-di as text %12s abbrev("`treatment'",12) " {c |} " as result %9.5f scalar(ATT) " "%9.3f scalar(tstat) "    " %9.5f scalar(SE) "    " %9.5f scalar(CILB) "   " %9.5f scalar(CIUB)  %9.3f scalar(p_value)     ""
-di as text "{hline 13}{c BT}{hline 77}"
+di as text ""
+di as text "{hline 13}{c TT}{hline 63}"
+di as text %12s abbrev("`outcome'",12) " {c |}     ATT     Std. Err.     t      P>|t|    [95% Conf. Interval]" 
+di as text "{hline 13}{c +}{hline 63}"
+di as text %12s abbrev("`treatment'",12) " {c |} " as result %9.5f scalar(ATT) "  " %9.5f scalar(SE) %9.2f scalar(tstat) %9.3f scalar(p_value) "   " %9.5f scalar(CILB) "   " %9.5f scalar(CIUB)
+di as text "{hline 13}{c BT}{hline 63}"
 di as txt "Treated Unit: `treatst'"
 di as res "FDID selects `controls' as the optimal donors."
-di as text "Standard Errors are Newey-West Standard Errors."
 di as text "See Li (2024) for technical details."
 
 end
