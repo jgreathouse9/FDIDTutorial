@@ -138,35 +138,20 @@ We also keep the individual unit frames from above, for reference.
 
 {phang}
 
-Users may install {cmd:fdid} like {cmd:net install fdid, from("https://raw.githubusercontent.com/jgreathouse9/FDIDTutorial/main") replace}.
+Users may install {cmd:fdid} like {stata "net install fdid, from(https://raw.githubusercontent.com/jgreathouse9/FDIDTutorial/main) replace"}.
 
-To obtain the data files, we do: {cmd: net get fdid, from("https://raw.githubusercontent.com/jgreathouse9/FDIDTutorial/main") replace}.
+To obtain the data files, we do: {stata "net get fdid, from(https://raw.githubusercontent.com/jgreathouse9/FDIDTutorial/main) replace"}.
 
 
 Replicating HCW2012
 
-{cmd:u hcw, clear}
+{stata "u hcw, clear"}
 
-{cmd:fdid gdp, tr(treat) unitnames(state) gr1opts(scheme(sj) name(hcw, replace))}
-
-{phang}
-
-Replicating Abadie and Gardeazabaal 2003
-
-{cmd:u "agbasque.dta", clear}
-
-
-{cmd:fdid gdpcap, tr(treat) gr1opts(scheme(sj) name(ag, replace))}
+{stata "fdid gdp, tr(treat) unitnames(state)"}
 
 {phang}
 
-A fake multitreatment example:
-
-{cmd:u "hcw.dta", clear}
-
-{cmd:replace treat = 1 if state == "austria" & time >20}
-
-{cmd:fdid gdp, tr(treat) unitnames(state)}
+For a more extended walkthrough, see the {browse "https://github.com/jgreathouse9/FDIDTutorial/blob/main/StataVignette.md":vignette}.
 
 
 {hline}
