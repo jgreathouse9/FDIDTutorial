@@ -137,7 +137,7 @@ r(results)[1,2]
                 ATT        TATT
 Effects  -21.150942  -592.22637
 ```
-where we have the average treatment effect on the treated and the total treatment effect. The frame ```multiframe```, returned only when we have $N\_{\text{tr}}>1$, contains the event time effects, where users may create event study sytle plots should they wish. The matrix ```r(series)``` is the exact same thing in matrix form. For those curious about the specific controls selected, these may be found in the notes. For example, for California, we can change to its frame from the default one
+where we have the average treatment effect on the treated units and the total treatment effect. The frame ```multiframe```, returned only when we have $N\_{\text{tr}}>1$, contains the event time effects, where users may create event study sytle plots should they wish. The matrix ```r(series)``` is the exact same thing in matrix form. For those curious about the specific controls selected, these may be found in the notes. For example, for California, we can change to its frame from the default one
 
 ```stata
 frame change fdid_cfframe5
