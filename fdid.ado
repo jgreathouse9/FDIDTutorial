@@ -192,7 +192,7 @@ numcheck, unit(`panel') ///
 
 treatprocess, time(`time') ///
 	unit(`panel') ///
-	treated(`treated')
+	treated(`treated') trnum(`x')
 	
 loc trdate = e(interdate)
 
@@ -217,7 +217,7 @@ est_dd, time(`time') ///
 	panel(`panel') ///
 	outcome(`depvar') ///
 	trnum(`x') treatment(`treated') ///
-	cfframe(`defname')
+	cfframe(`defname') ntr(`nwords')
 	
 }
 
@@ -357,7 +357,7 @@ end
 
 prog treatprocess, eclass
         
-syntax, time(varname) unit(varname) treated(varname)
+syntax, time(varname) unit(varname) treated(varname) trnum(numlist min=1 max=1 >=1 int)
 
 /*#########################################################
 
@@ -373,7 +373,7 @@ syntax, time(varname) unit(varname) treated(varname)
 qui xtset
 loc time_format: di r(tsfmt)
 
-qui su `time' if `treated' ==1
+qui su `time' if `treated' ==1 & `unit'==`trnum'
 
 loc last_date = r(max)
 loc interdate = r(min)
@@ -442,7 +442,8 @@ syntax, ///
 	panel(string asis) ///
 	outcome(string asis) ///
 	trnum(numlist min=1 max=1 >=1 int) ///
-	treatment(string) [outlab(string asis)] cfframe(string)
+	treatment(string) [outlab(string asis)] ///
+	cfframe(string) ntr(numlist min=1 max=1 >=1 int)
 
 	
 local curframe = c(frame)
@@ -458,7 +459,8 @@ qbys `panel': egen et = max(`treatment')
 
 qui keep if et ==0 | `panel'==`trnum'
 
-keep `panel' `time' `outcome'
+
+qui keep `panel' `time' `outcome'
 
 
 qui reshape wide `outcome', j(`panel') i(`time')
@@ -505,11 +507,17 @@ tempname max_r2
 
 // Forward Selection Algorithm ...
 di ""
-    dis "Selecting the optimal donors via Forward Selection..."
-    dis "----+--- 1 ---+--- 2 ---+--- 3 ---+--- 4 ---+--- 5"
+    di "Selecting the optimal donors via Forward Selection..."
+    di "----+--- 1 ---+--- 2 ---+--- 3 ---+--- 4 ---+--- 5"
 
     
+qui summarize `treated_unit'
+local mean_observed = r(mean)
     
+* Calculate the Total Sum of Squares (TSS)
+qui generate double tss = (`treated_unit' - `mean_observed')^2
+qui summarize tss
+local TSS = r(sum) 
 
 while ("`predictors'" != "") {
 
@@ -549,14 +557,6 @@ scalar `max_r2' = 0
 		// Now we calculate the pre-intervention R2 statistic.
 
 
-		qui summarize `treated_unit'
-		local mean_observed = r(mean)
-
-		* Calculate the Total Sum of Squares (TSS)
-		qui generate double tss = (`treated_unit' - `mean_observed')^2
-		qui summarize tss
-		local TSS = r(sum)
-
 		* Calculate the Residual Sum of Squares (RSS)
 		qui generate double rss = (`treated_unit' - `cfp')^2
 		qui summarize rss
@@ -594,6 +594,8 @@ scalar `max_r2' = 0
 	local predictors : list predictors - new_U
 	
 	    if `r2' < 0 {
+	    	
+
 
         continue, break
     }
@@ -790,6 +792,7 @@ scalar `t1' = r(N)
 
 
 g te = `treated_unit' - cf
+
 lab var te "Pointwise Treatment Effect"
 qui g eventtime = `time'-`interdate'
 
@@ -856,10 +859,10 @@ scalar p_value = 2 * (1 - normal(scalar(tstat)))
 
 local tabletitle "Forward Difference-in-Differences"
 
-
+if `ntr' < 10 {
 di as text ""
 di as text ""
-di as res "`tabletitle'"  "          " "T0 R2:" %9.3f scalar(r2) "     T0 RMSE:" %9.3f  `RMSE'
+di as res "`tabletitle'"  "          " "T0 R2:" %9.5f scalar(r2) "     T0 RMSE:" %9.5f  `RMSE'
 di as text ""
 di as text "{hline 13}{c TT}{hline 63}"
 di as text %12s abbrev("`outcome'",12) " {c |}     ATT     Std. Err.     t      P>|t|    [95% Conf. Interval]" 
@@ -869,5 +872,5 @@ di as text "{hline 13}{c BT}{hline 63}"
 di as txt "Treated Unit: `treatst'"
 di as res "FDID selects `controls' as the optimal donors."
 di as text "See Li (2024) for technical details."
-
+}
 end
