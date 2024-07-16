@@ -282,7 +282,12 @@ return mat results =`my_matrix'
 
 
 ereturn clear
+if `nwords' > 1 {
+di ""
+    di "Multiple treated units..."
+    di "See results returned in r()."
 
+}
 }
 cwf `originalframe'
 
@@ -506,11 +511,13 @@ tempname max_r2
 
 
 // Forward Selection Algorithm ...
+if `ntr' == 1 {
 di ""
     di "Selecting the optimal donors via Forward Selection..."
     di "----+--- 1 ---+--- 2 ---+--- 3 ---+--- 4 ---+--- 5"
 
-    
+}
+  
 qui summarize `treated_unit'
 local mean_observed = r(mean)
     
@@ -720,7 +727,8 @@ qui su `treated_unit' if `time' >= `interdate'
 loc yobs = r(mean)
 
 * Here is the plot
-if "`gr1opts'" != "" {
+
+if ("`gr1opts'" ~= "") {
 
 if "`outlab'"=="" {
 	
@@ -769,13 +777,11 @@ forv i = 1/`nwords' {
     
     loc controls: display "`selected'"
     
-    qui note: The selected units are "`selected'"
-
-
-    
-
     
 }
+
+frame `cfframe': qui note: The selected units are "`controls'"
+
 }
 
 
@@ -825,7 +831,7 @@ scalar CIUB =  scalar(ATT) + (((invnormal(0.975) * scalar(ohat)))/sqrt(scalar(t2
 
 
 
-if "`gr2opts'" != "" {
+if ("`gr2opts'" ~= "") {
 
 	
 
@@ -835,7 +841,7 @@ yli(0, lpat(-)) xli(0, lwidth(vthin)) name(gap`treatst', replace) `gr2opts'
 }
 
 loc rmseround: di %9.5f `RMSE'
-qui keep eventtime te `treated_unit' cf
+qui keep eventtime `time' te `treated_unit' cf
 qui mkmat *, mat(series)
 
 scalar SE = scalar(ohat)/sqrt(scalar(t2))
@@ -859,7 +865,7 @@ scalar p_value = 2 * (1 - normal(scalar(tstat)))
 
 local tabletitle "Forward Difference-in-Differences"
 
-if `ntr' < 10 {
+if `ntr' == 1 {
 di as text ""
 di as text ""
 di as res "`tabletitle'"  "          " "T0 R2:" %9.5f scalar(r2) "     T0 RMSE:" %9.5f  `RMSE'

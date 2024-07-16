@@ -69,7 +69,7 @@ Note that each string value pair must be uniquely identified.
 
 {phang}
 {opt cfframename}: The name of the data frame containing the counterfactual, treatment effect, and observed values.
-If nothing is specified, the name by default is {it:fdid_cfframe}, with the panel id as a suffix.
+If nothing is specified, the name by default is {it:fdid_cfframe}, with the numeric panel id as a suffix.
 
 {marker remarks}{...}
 {title:Remarks}
