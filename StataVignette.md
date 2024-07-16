@@ -48,7 +48,7 @@ See Li (2024) for technical details.
 
 Here is the plot:
 <p align="center">
-  <img src="fithongkong.png" alt="Alt Text" width="50%">
+  <img src="fithongkong.png" alt="Alt Text">
 </p>
 
 If we wish to see the returned results, we can do
