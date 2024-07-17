@@ -147,6 +147,12 @@ qui levelsof `panel' if `treated'==1, loc(trunit)
 
 local nwords :  word count `trunit'
 
+if `nwords' > 1 {
+    matrix empty_matrix = J(1, 7, .)  // Initialize an empty matrix with 0 rows and 7 columns
+
+    matrix combined_matrix = empty_matrix  // Initialize combined_matrix as empty
+}
+
 
 
 foreach x of loc trunit {
@@ -219,6 +225,11 @@ est_dd, time(`time') ///
 	trnum(`x') treatment(`treated') ///
 	cfframe(`defname') ntr(`nwords')
 	
+        if `nwords' > 1 {
+            matrix resmat = e(ATTs)
+            matrix combined_matrix = combined_matrix \ resmat
+        }
+
 }
 
 if `nwords'==1 {
@@ -234,63 +245,65 @@ ereturn clear
 }
 
 if `nwords' > 1 {
-
-qui frame dir
-
-loc currframes `r(frames)'
-
-loc test1 `originalframe'
-
-local predictors: list currframes- test1
-mkf multiframe
-
-cwf multiframe
-
-foreach x of loc predictors {
-
-frame `x' {
 	
-tempfile frame
+mkf fdidmatrixres
+cwf fdidmatrixres
+	
+* Convert the matrix "results" into a dataset named "myresults"
+qui svmat combined_matrix, names(col)
 
-qui sa `frame'
-}
-qui append using `frame'
-}
+keep c1 c2
 
-qui keep te eventtime
-qui drop if te ==.
+qui drop in 1
 
-qui mkmat eventtime te, mat(series)
-return mat series= series
+qui rename (*) (ATT SE)
 
-qui su te if eventtime >= 0
+qui su ATT, mean
 
+// Calculate the combined ATT
+scalar ATT_combined = r(mean)
 
+qui su SE
 
-scalar ATT = r(mean)
-scalar TATT = r(sum)
+// Calculate the combined variance
+scalar var_combined = r(Var)
+
+// Calculate the combined SE
+scalar SE_combined = sqrt(scalar(var_combined))
+
+// Calculate the 95% Confidence Interval
+scalar CI_lower = scalar(ATT_combined) - (invnormal(0.975) * scalar(SE_combined))
+scalar CI_upper = scalar(ATT_combined) + (invnormal(0.975) * scalar(SE_combined))
+
+    // Assume you have already computed ATT_combined and SE_combined
+    // Calculate t-statistic
+    scalar tstat = scalar(ATT_combined) / scalar(SE_combined)
+
+    // Calculate p-value (two-sided)
+    scalar p_value = 2 * (1 - normal(abs(scalar(tstat))))
+
+di as text ""
+di as res "Staggered Forward Difference-in-Differences"
+di as text "{hline 13}{c TT}{hline 63}"
+di as text %12s abbrev("`depvar'",12) " {c |}     ATT     Std. Err.     t      P>|t|    [95% Conf. Interval]" 
+di as text "{hline 13}{c +}{hline 63}"
+di as text %12s abbrev("`treated'",12) " {c |} " as result %9.5f scalar(ATT_combined) "  " %9.5f scalar(SE_combined) %9.2f scalar(tstat) %9.3f scalar(p_value) "   " %9.5f scalar(CI_lower) "   " %9.5f scalar(CI_upper)
+di as text "{hline 13}{c BT}{hline 63}"
+di as text "See Li (2024) for technical details."
+di as text "Effects are calculated in event-time using never-treated units."
+
 
 tempname my_matrix
+matrix `my_matrix' = (scalar(ATT_combined), scalar(SE_combined), scalar(tstat), scalar(CI_lower), scalar(CI_upper))
+matrix colnames `my_matrix' = ATT SE t LB UB
 
-matrix `my_matrix' = (scalar(ATT), scalar(TATT))
-matrix colnames `my_matrix' = ATT TATT
+matrix rownames `my_matrix' = Result
 
-matrix rownames `my_matrix' = Effects
+return mat results= `my_matrix'
 
-
-return mat results =`my_matrix'
-
-
-ereturn clear
-if `nwords' > 1 {
-di ""
-    di "Multiple treated units..."
-    di "See results returned in r()."
-
-}
 }
 cwf `originalframe'
-
+qui cap frame drop fdidmatrixres
 qui frame drop __dfcopy
 end
 
@@ -702,6 +715,7 @@ qui cnsreg `treated_unit' ymean if `time' < `interdate', constraints(1)
 loc RMSE = e(rmse)
 
 qui predict cf
+qui predict se, stdp
 
 * Calculate the mean of observed values
 qui summarize `treated_unit' if `time' < `interdate'
@@ -841,7 +855,7 @@ yli(0, lpat(-)) xli(0, lwidth(vthin)) name(gap`treatst', replace) `gr2opts'
 }
 
 loc rmseround: di %9.5f `RMSE'
-qui keep eventtime `time' te `treated_unit' cf
+qui keep eventtime `time' te `treated_unit' cf se
 qui mkmat *, mat(series)
 
 scalar SE = scalar(ohat)/sqrt(scalar(t2))

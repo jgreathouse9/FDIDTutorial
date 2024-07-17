@@ -26,26 +26,44 @@
 {synoptset 20 tabbed}{...}
 {synoptline}
 {syntab:Requirements}
+
+Firstly, {cmd: fdid} requires the data to be {cmd: xtset} and strongly balanced without gaps.
+
+
 {synopt:{opt depvar}}The outcome of interest. {p_end}
-{synopt:{opt treated}}Our treatment variable. It must be a 0 1 dummy. Note that {cmd:fdid} supports settings
-where we have multiple treated units. Under the hood,
-it keeps all never treated units and estimates the treatment effect for each treated unit. {p_end}
+{synopt:{opt treated}}Our treatment variable. It must be a 0 1 dummy. One may not use factor notation. {cmd:fdid} supports settings
+where we have multiple treated units with different treatment dates.
+Note that we assume the treatment is fully absorbed (once treated, always treated). {p_end}
 {synoptline}
 {p2colreset}{...}
 {p 4 6 2}
-
-
 
 {marker description}{...}
 {title:Description}
 
 {pstd}
-{cmd:fdid} estimates the average treatment effect on the treated
-for settings where we have one treated unit and multiple control units.
-It uses an iterative forward selection algorithm to select the optimal
-control group. After selecting the optimal control group, {cmd:fdid} calculates the treatment effect
-along with confidence intervals. Note that the dependent variable must be numeric, 
-non-missing and non-constant. {cmd: fdid} requires the data to be {cmd: xtset} and balanced.
+{cmd:fdid} estimates the average treatment effect on the treated unit
+as proposed by {browse "https://doi.org/10.1287/mksc.2022.0212": Li (2024)}. {cmd:fdid} selects the optimal pool
+of control units via forward selection. Below, we describe the selection algorithm for {cmd:fdid}. {p_end}
+
+{pstd} We begin with no selected control units. We first select the most optimal control unit by using linear regression to predict the
+pre-intervention outcome vector of the treated unit using each of the control units in a single-predictor OLS model.
+Of these controls, we select the control unit that has the highest R-squared statistic among them. Then, we select the next
+optimal control unit by taking the average of the first selected control and each of the units in the now N0-1 control group.
+Of these N0-1 models, we select the two-unit model with the highest R-squared statistic. We then add this next-best control unit
+to the next model, and continue like so until we have as many DID models as we have control units. In the process, we put the unit
+with the highest R2 at the front of the list of the new control group. {p_end}
+
+{pstd} Next, we select the optimal DID model. We do this by iteratively adding new control units.
+Since the algorithm has already sorted each new selected control by it's R-squared value, we store the value of the current highest R-squared statistic.
+For example, suppose the first model, using the first selected unit, has an R-squared of 50, and when we add the next selected unit the R-squared goes to 60. We would prefer this model
+using the two units since its R-squared statistic is higher than the one unit model. If another unit increases the R-Squared statistic, we add it to the optimal control group. We continue like so, using whatever DID model of the total N0 DID models has the highest R-squared statsitic.
+Naturally, the DID model with the highest R-squared statistic becomes the optimal DID model because this means that it has selected the optimal control group.  {p_end}
+
+{pstd} After selecting the optimal control group, {cmd:fdid} calculates the treatment effect
+along with confidence intervals using the inference procedure as described in {browse "https://doi.org/10.1287/mksc.2022.0212": Li (2024)}. When there are many treated units,
+we take the expectation of the event-time ATTs (that is, the average of all treatment effects for each unit in its respective treated periods). We then pool the variances of each ATT and calculate the standard error of the ATT. Using this, we
+calculate t-statistics and 95% confidence intervals.  {p_end}
 
 
 {marker options}{...}
@@ -54,7 +72,7 @@ non-missing and non-constant. {cmd: fdid} requires the data to be {cmd: xtset} a
 {dlgtab:Main}
 
 {phang}
-{opt gr1opts}: If specified, edits the display of the observed versus predicted plot. It accepts the string literally as is. For example,
+{opt gr1opts}: If specified, edits the display options of the observed versus predicted plot. It accepts the string literally as is. For example,
 {cmd: fdid gdp, tr(treat) unitnames(state) gr1opts(scheme(sj) name(hcw, replace))} returns a plot formatted in the most recent version of the Stata Journal's scheme, with the plot being named hcw. If not specified, no plot is created.
 
 {phang}
@@ -68,14 +86,10 @@ then the user must specify the string variable they wish to use as the panel var
 Note that each string value pair must be uniquely identified.
 
 {phang}
-{opt cfframename}: The name of the data frame containing the counterfactual, treatment effect, and observed values.
+{opt cfframename}: The user-supplied name of the data frame containing the observed values, counterfactual, treatment effect,
+standard error of the treatment effect, and event time.
 If nothing is specified, the name by default is {it:fdid_cfframe}, with the numeric panel id as a suffix.
-
-{marker remarks}{...}
-{title:Remarks}
-
-{pstd}
-For theoretical justification and more details on the method overall, see ({browse "https://doi.org/10.1287/mksc.2022.0212":the original paper}).
+For example, if the treated unit is California and its panel id is 3, the name is fdid_cfframe3.
 
 {synoptline}
 
@@ -96,7 +110,7 @@ It also has the R-squared and Root-Mean-Squared Error statistics for the pre-int
 {p 8 8 2}
 {cmd: r(series):}{p_end}
 {p 10 10 2}
-A matrix containing the time, observed values, counterfactual values, pointwise treatment effect, and event time.
+A matrix containing the time, observed values, counterfactual values, pointwise treatment effect, pointwise standard error, and event time.
 
 {p 8 8 2}
 {cmd: r(U):}{p_end}
@@ -107,30 +121,19 @@ A macro containing the list of selected units chosen by the forward selection al
 If there are many treated units, {cmd:fdid} returns the following:
 
 {p 8 8 2}
-{cmd: r(series):}{p_end}
-{p 10 10 2}
-A matrix containing the event time variable and pointwise treatment effect variable for each treated unit.
-
-{p 8 8 2}
 {cmd: r(results):}{p_end}
 {p 10 10 2}
-A matrix containing the ATT and total treatment effect.
+A matrix containing the results from the table, including the ATT, standard error, t-statistic, and the upper and lower bounds of the 95% Confidence Interval.
 
 {synoptline}
 
 {title:Frames}
 {p 4 8 2}
-{cmd:fdid} returns frames for the user's convenience. If there's one treated unit, we have:
+{cmd:fdid} returns a frame for the user's convenience.
 
 {p 10 10 2}
-{cmd:fdid_cfframe}: Contains the outcome vector for the treated unit, the counterfactual vector, the time period, and the pointwise treatment effect.
-
-{p 4 8 2}
-If many units are treated, we have:
-
-{p 10 10 2}
-{cmd:multiframe}: Contains the treatment effect variable for all treated units as well as as the event time variable.
-We also keep the individual unit frames from above, for reference.
+{cmd:fdid_cfframe}: Contains the outcome vector for the treated unit, the counterfactual vector, the time period, the pointwise treatment effect, and the pointwise standard error.
+If many units are treated, then we have one frame per treated unit, with the names of the selected control units in the {help notes}.
 
 
 {marker examples}{...}
