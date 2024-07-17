@@ -128,7 +128,6 @@ order id state year packs treated
 drop if inlist(state, "Alaska", "Hawaii")
 
 drop if inlist(state,"Maryland", "Michigan", "New Jersey", "New York", "Washington")
-set tr off
 cls
 
 
