@@ -74,6 +74,8 @@ r(results)[1,7]
                   ATT         SE          t         LB         UB         R2       RMSE
 Statistics  .02540494  .00462405  5.4940862  .01634196  .03446791   .8427835     .01638
 ```
+Pleasingly, these are the exact same results Kathy gets in her MATLAB code.
+
 Frames, labeled by default *fdidcfframe* *panelid*, are also returned.
 
 ```stata
@@ -88,6 +90,8 @@ returns
 
 Note: Frames marked with * contain unsaved data.
 ```
+These contain the observed and counterfactual values, the pointwise treatment effect and its standard error, as well as the event time variable.
+
 ## Staggered Adoption
 
 Okay let's do staggered adoption. We begin by pulling in and cleaning the smoking data.
