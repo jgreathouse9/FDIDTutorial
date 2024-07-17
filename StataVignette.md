@@ -138,7 +138,7 @@ We're concerened with [Proposition 99](https://ballotpedia.org/California_Propos
 ```stata
 fdid packs if inrange(year,1970,2004), tr(treated) unitnames(state)
 ```
-displays
+which displays the table
 ```stata
 Staggered Forward Difference-in-Differences
 -----------------------------------------------------------------------------
