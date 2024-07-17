@@ -2,7 +2,7 @@
 
 I've already covered the basics of the algorithm in [the Python vignette](https://github.com/jgreathouse9/FDIDTutorial/blob/main/Vignette.md), so I will not repeat myself. This note simply demonstrates how to use FDID for Stata 16 and up. No special commands are needed to use ```fdid```.
 
-First we install fdid into Stata like
+First we install ```fdid``` and its help file into Stata like
 
 ```stata
 net inst fdid, from("https://raw.githubusercontent.com/jgreathouse9/FDIDTutorial/main") replace
@@ -63,7 +63,7 @@ matrices:
              r(series) :  61 x 5
             r(results) :  1 x 7
 ```
-The ```r(series)``` is a matrix containing the observed and counterfactual values, calendar time, event time, and individual treatment effects.
+The ```r(series)``` is a matrix containing the observed and counterfactual values, event time, individual treatment effects, and the standard error for the treatment effect.
 
 The results themselves can also be conveniently accessed like
 ```stata
