@@ -92,6 +92,7 @@ Note: Frames marked with * contain unsaved data.
 
 Okay let's do staggered adoption. We begin by pulling in and cleaning the smoking data.
 ```stata
+
 clear *
 
 import delim "https://data.cdc.gov/api/views/7nwe-3aj9/rows.csv?accessType=DOWNLOAD&api_foundry=true"
@@ -106,9 +107,15 @@ rename (*) (state year packs)
 
 destring year, replace
 
-g treated = 1 if state == "California" & year > 1988
+g treated = 1 if state == "California" & year >= 1989
 
-replace treated = 1 if state == "Massachusetts" & year > 1992
+replace treated = 1 if state == "Massachusetts" & year >= 1993
+
+replace treated = 1 if state == "Arizona" & year >= 1995
+
+replace treated = 1 if state=="Florida" & year >= 1998
+
+replace treated = 1 if state== "Oregon" & year >= 1997
 
 replace treated = 0 if treated ==.
 
@@ -118,26 +125,31 @@ xtset id year
 
 order id state year packs treated
 
-drop if inlist(state,"Arizona", "Oregon", "Florida","Alaska", "Hawaii")
+drop if inlist(state, "Alaska", "Hawaii")
 
 drop if inlist(state,"Maryland", "Michigan", "New Jersey", "New York", "Washington")
-
+set tr off
 cls
+
+
 ```
-We're concerened with [Proposition 99](https://en.wikipedia.org/wiki/1988_California_Proposition_99) and [the Massachusetts tobacco program](https://www.cdc.gov/mmwr/preview/mmwrhtml/00044337.htm#:~:text=The%20Massachusetts%20Tobacco%20Control%20Program%20(MTCP)%2C%20administered,early%201994%2C%20the%20program%20began%20funding%20local). So we estimate:
+We're concerened with [Proposition 99]([https://en.wikipedia.org/wiki/1988_California_Proposition_99](https://ballotpedia.org/California_Proposition_99,_Tobacco_Tax_Increase_Initiative_(1988)), [the Massachusetts tobacco program](https://ballotpedia.org/Massachusetts_Question_1,_Excise_Tax_on_Cigarettes_and_Smokeless_Tobacco_Initiative_(1992)), [Arizona](https://ballotpedia.org/Arizona_Proposition_200,_Tobacco_Tax_and_Healthcare_Initiative_(1994)), [Florida]([http://www.cnn.com/US/9805/08/tobacco.implementation/](https://www.swatflorida.com/get-to-know-us/)), and [Oregon](https://ballotpedia.org/Oregon_Measure_44,_Cigarette_and_Tobacco_Tax_Increase_Initiative_(1996)). So we estimate:
 
 ```stata
 fdid packs if inrange(year,1970,2004) & id != 9, tr(treated) unitnames(state)
-
-mat l r(results)
 ```
-which returns in the ```return list```
+displays
 ```stata
-r(results)[1,2]
-                ATT        TATT
-Effects  -21.150942  -592.22637
+Staggered Forward Difference-in-Differences
+-----------------------------------------------------------------------------
+       packs |     ATT     Std. Err.     t      P>|t|    [95% Conf. Interval]
+-------------+---------------------------------------------------------------
+     treated | -15.71868    0.53376   -29.45    0.000   -16.76484   -14.67253
+-----------------------------------------------------------------------------
+See Li (2024) for technical details.
+Effects are calculated in event-time using never-treated units.
 ```
-where we have the average treatment effect on the treated units and the total treatment effect. The frame ```multiframe```, returned only when we have $N\_{\text{tr}}>1$, contains the event time effects, where users may create event study sytle plots should they wish. The matrix ```r(series)``` is the exact same thing in matrix form. For those curious about the specific controls selected, these may be found in the notes. For example, for California, we can change to its frame from the default one
+This can also be accessed later by ```mat l r(results)```. For those curious about the specific controls selected for each treated unit, these may be found in the notes of the unit specific dataframe. For example, for California, we can change to its frame from the original one
 
 ```stata
 frame change fdid_cfframe5
@@ -148,6 +160,8 @@ which returns
 _dta:
   1.  The selected units are "Montana, Colorado, Nevada, Connecticut,"
 ```
+We may also use the standard error of the pointwise treatment effect coefficient to create event-study style plots, complete with 95% confidence intervals. In the future, I may make this an option as well, along with [Cohort ATT](https://cran.r-project.org/web/packages/did/vignettes/TWFE.html) options, using [the not-yet treated units](https://bcallaway11.github.io/did/articles/multi-period-did.html) as controls, or other features that would make ```fdid``` appealing to a wider audience.
+
 
 Okay, so that's it for the vignette. No doubt people will have questions, suggestions, ideas, or concerns, so you may contact me as ususal.
 
