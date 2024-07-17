@@ -136,7 +136,7 @@ cls
 We're concerened with [Proposition 99]([https://en.wikipedia.org/wiki/1988_California_Proposition_99](https://ballotpedia.org/California_Proposition_99,_Tobacco_Tax_Increase_Initiative_(1988)), [the Massachusetts tobacco program](https://ballotpedia.org/Massachusetts_Question_1,_Excise_Tax_on_Cigarettes_and_Smokeless_Tobacco_Initiative_(1992)), [Arizona](https://ballotpedia.org/Arizona_Proposition_200,_Tobacco_Tax_and_Healthcare_Initiative_(1994)), [Florida]([http://www.cnn.com/US/9805/08/tobacco.implementation/](https://www.swatflorida.com/get-to-know-us/)), and [Oregon](https://ballotpedia.org/Oregon_Measure_44,_Cigarette_and_Tobacco_Tax_Increase_Initiative_(1996)). So we estimate:
 
 ```stata
-fdid packs if inrange(year,1970,2004) & id != 9, tr(treated) unitnames(state)
+fdid packs if inrange(year,1970,2004), tr(treated) unitnames(state)
 ```
 displays
 ```stata
@@ -160,11 +160,13 @@ which returns
 _dta:
   1.  The selected units are "Montana, Colorado, Nevada, Connecticut,"
 ```
+
+Note of course that this does not purport to be a comprehensive analysis of tobacco policy in this setting, it is purely for demonstration using additional examples that [Abadie (2010)](https://doi.org/10.1198/jasa.2009.ap08746) had to skip over.
+
 We may also use the standard error of the pointwise treatment effect coefficient to create event-study style plots, complete with 95% confidence intervals. In the future, I may make this an option as well, along with [Cohort ATT](https://cran.r-project.org/web/packages/did/vignettes/TWFE.html) options, using [the not-yet treated units](https://bcallaway11.github.io/did/articles/multi-period-did.html) as controls, or other features that would make ```fdid``` appealing to a wider audience.
 
 
-Okay, so that's it for the vignette. No doubt people will have questions, suggestions, ideas, or concerns, so you may contact me as ususal.
+Okay, so that's it for the vignette. No doubt people will have questions, suggestions, ideas, or errors to report, concerns, so you may contact me as ususal.
 
 # Contact
 - Jared Greathouse: <jgreathouse3@student.gsu.edu> (see [my website](https://jgreathouse9.github.io/))
-- Kathy Li: <kathleen.li@mccombs.utexas.edu>
