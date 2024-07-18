@@ -786,12 +786,6 @@ yti("`treatst' `outlab'") ///
 legend(order(1 "Observed" 2 "FDID") pos(12)) ///
 xli(`interdate', lcol(gs6) lpat(--)) `grname' `gr1opts'
 
-twoway (connected `treated_unit' `time', connect(direct) msymbol(smdiamond)) (connected cf `time', lpat(--) msymbol(smsquare)), ///
-yti("`treatst' `outlab'") ///
-legend(order(1 "Observed" 2 "FDID") pos(12)) ///
-xli(`interdate', lcol(gs6) lpat(--)) name(`fitname_cleaned', replace) `gr1opts'
-
-
 }
 
 
