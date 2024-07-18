@@ -110,7 +110,7 @@ It also has the R-squared and Root-Mean-Squared Error statistics for the pre-int
 {p 8 8 2}
 {cmd: r(series):}{p_end}
 {p 10 10 2}
-A matrix containing the time, observed values, counterfactual values, pointwise treatment effect, pointwise standard error, and event time.
+A matrix containing the time, observed values, counterfactual values, pointwise treatment effect, and event time.
 
 {p 8 8 2}
 {cmd: r(U):}{p_end}
@@ -132,7 +132,7 @@ A matrix containing the results from the table, including the ATT, standard erro
 {cmd:fdid} returns a frame for the user's convenience.
 
 {p 10 10 2}
-{cmd:fdid_cfframe}: Contains the outcome vector for the treated unit, the counterfactual vector, the time period, the pointwise treatment effect, and the pointwise standard error.
+{cmd:fdid_cfframe}: Contains the outcome vector for the treated unit, the counterfactual vector, the time period, and the pointwise treatment effect.
 If many units are treated, then we have one frame per treated unit, with the names of the selected control units in the {help notes}.
 
 
