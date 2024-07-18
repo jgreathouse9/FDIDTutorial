@@ -304,6 +304,7 @@ return mat results= `my_matrix'
 }
 cwf `originalframe'
 qui cap frame drop fdidmatrixres
+cap frame drop `defname'
 qui frame drop __dfcopy
 end
 
