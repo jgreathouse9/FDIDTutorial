@@ -715,7 +715,7 @@ qui cnsreg `treated_unit' ymean if `time' < `interdate', constraints(1)
 loc RMSE = e(rmse)
 
 qui predict cf
-qui predict se, stdp
+//qui predict se, stdp
 
 * Calculate the mean of observed values
 qui summarize `treated_unit' if `time' < `interdate'
