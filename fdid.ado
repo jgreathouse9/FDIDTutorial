@@ -764,9 +764,6 @@ local contains_name = strpos("`myString'", "name")
 // Return 1 if the string contains the word "name", otherwise return 0
 local namecont = cond(`contains_name' > 0, 1, 0)
 
-// Display the result
-display `namecont'
-
 cap as `namecont'==1
 
 if _rc != 0 {
