@@ -855,7 +855,7 @@ yli(0, lpat(-)) xli(0, lwidth(vthin)) name(gap`treatst', replace) `gr2opts'
 }
 
 loc rmseround: di %9.5f `RMSE'
-qui keep eventtime `time' te `treated_unit' cf se
+qui keep eventtime `time' te `treated_unit' cf
 qui mkmat *, mat(series)
 
 scalar SE = scalar(ohat)/sqrt(scalar(t2))
