@@ -11,7 +11,15 @@
 {title:Forward Difference in Differences}
 
 {phang}
-{bf:fdid} {hline 2} Estimates Forward Difference-in-Differences. 
+{bf:fdid} {hline 2} Estimates Forward Difference-in-Differences.
+
+
+{marker linkspdf}{...}
+{title:Links to Online Documentation}
+
+        For a more extended walkthrough, see the {browse "https://github.com/jgreathouse9/FDIDTutorial/blob/main/StataVignette.md":vignette}.
+
+{pstd}
 
 
 {marker syntax}{...}
@@ -21,17 +29,22 @@
 {cmdab:fdid}
 [{depvar}]
 {ifin},
-{opt tr:eated}({varname}) [{opt gr1opts}({it:string}) {opt gr2opts}({it:string}) {cmd: unitnames}({it:{varname}}) {cmd: cfframename}({it:string})]
+{opt tr:eated}({varname}) [{opt gr1opts}({it:string}) {opt gr2opts}({it:string}) {cmd: unitnames}({it:{varname}})]
+
 
 {synoptset 20 tabbed}{...}
-{synoptline}
-{syntab:Requirements}
 
-Firstly, {cmd: fdid} requires the data to be {cmd: xtset} and strongly balanced without gaps.
+{dlgtab:Requirements}
 
+{p2colreset}{...}
 
-{synopt:{opt depvar}}The outcome of interest. {p_end}
-{synopt:{opt treated}}Our treatment variable. It must be a 0 1 dummy. One may not use factor notation. {cmd:fdid} supports settings
+{p 4 4 2}{helpb xtset} {it:panelvar} {it:timevar} must be used to declare a strongly balanced panel dataset without gaps.
+
+{p 4 4 2}
+{depvar} The numeric outcome of interest.{p_end}
+
+{p 4 4 2}
+{cmd: treated} Our treatment. It must be a 0 1 dummy, equal to 1 on and at the treatment date and afterwards. One may NOT use factor notation. {cmd:fdid} supports settings
 where we have multiple treated units with different treatment dates.
 Note that we assume the treatment is fully absorbed (once treated, always treated). {p_end}
 {synoptline}
@@ -41,12 +54,13 @@ Note that we assume the treatment is fully absorbed (once treated, always treate
 {marker description}{...}
 {title:Description}
 
-{pstd}
+{p 4 4 2}
 {cmd:fdid} estimates the average treatment effect on the treated unit
 as proposed by {browse "https://doi.org/10.1287/mksc.2022.0212": Li (2024)}. {cmd:fdid} selects the optimal pool
 of control units via forward selection. Below, we describe the selection algorithm for {cmd:fdid}. {p_end}
 
-{pstd} We begin with no selected control units. We first select the most optimal control unit by using linear regression to predict the
+{p 4 4 2}
+We begin with no selected control units. We first select the most optimal control unit by using linear regression to predict the
 pre-intervention outcome vector of the treated unit using each of the control units in a single-predictor OLS model.
 Of these controls, we select the control unit that has the highest R-squared statistic among them. Then, we select the next
 optimal control unit by taking the average of the first selected control and each of the units in the now N0-1 control group.
@@ -54,13 +68,15 @@ Of these N0-1 models, we select the two-unit model with the highest R-squared st
 to the next model, and continue like so until we have as many DID models as we have control units. In the process, we put the unit
 with the highest R2 at the front of the list of the new control group. {p_end}
 
-{pstd} Next, we select the optimal DID model. We do this by iteratively adding new control units.
+{p 4 4 2}
+Next, we select the optimal DID model. We do this by iteratively adding new control units.
 Since the algorithm has already sorted each new selected control by it's R-squared value, we store the value of the current highest R-squared statistic.
 For example, suppose the first model, using the first selected unit, has an R-squared of 50, and when we add the next selected unit the R-squared goes to 60. We would prefer this model
 using the two units since its R-squared statistic is higher than the one unit model. If another unit increases the R-Squared statistic, we add it to the optimal control group. We continue like so, using whatever DID model of the total N0 DID models has the highest R-squared statsitic.
 Naturally, the DID model with the highest R-squared statistic becomes the optimal DID model because this means that it has selected the optimal control group.  {p_end}
 
-{pstd} After selecting the optimal control group, {cmd:fdid} calculates the treatment effect
+{p 4 4 2}
+After selecting the optimal control group, {cmd:fdid} calculates the treatment effect
 along with confidence intervals using the inference procedure as described in {browse "https://doi.org/10.1287/mksc.2022.0212": Li (2024)}. When there are many treated units,
 we take the expectation of the event-time ATTs (that is, the average of all treatment effects for each unit in its respective treated periods). We then pool the variances of each ATT and calculate the standard error of the ATT. Using this, we
 calculate t-statistics and 95% confidence intervals.  {p_end}
@@ -80,60 +96,44 @@ calculate t-statistics and 95% confidence intervals.  {p_end}
 {cmd: fdid gdp, tr(treat) unitnames(state) gr2opts(scheme(sj) name(hcwte, replace))} returns a plot formatted in the most recent version of the Stata Journal's scheme, with the plot being named hcwte. If not specified, no plot is created.
 
 {phang}
-{opt unitnames}: {cmd: fdid} requires the panel variable to have value labels, where a number is indexed to a string (i.e., 1="australia"). If the panel variable already has them, no error is returned.
+{opt unitnames}: {cmd: fdid} requires the panel variable to have value {help label}s, where a number is indexed to a string (i.e., 1="australia"). If the panel variable already has them, no error is returned.
 However, if the panel does not come with value labels,
 then the user must specify the string variable they wish to use as the panel variable's value labels.
 Note that each string value pair must be uniquely identified.
 
-{phang}
-{opt cfframename}: The user-supplied name of the data frame containing the observed values, counterfactual, treatment effect,
-standard error of the treatment effect, and event time.
-If nothing is specified, the name by default is {it:fdid_cfframe}, with the numeric panel id as a suffix.
-For example, if the treated unit is California and its panel id is 3, the name is fdid_cfframe3.
-
 {synoptline}
 
-{title:Saved Results}
+{marker results}{...}
+{title:Stored Results}
 
-{p 4 8 2}
-{cmd:fdid} returns different results depending on the setup of treatment.
-When only one unit is treated, {cmd:fdid} returns the following results which 
-can be displayed by typing {cmd: return list} after 
-{cmd: fdid} is finished (also see {help return}).  
+{pstd}
+{cmd:fdid} stores the following in e():
 
-{p 8 8 2}
-{cmd: r(results):}{p_end}
-{p 10 10 2}
-A matrix containing the ATT, standard error, t-statistic, and the upper and lower bounds of the 95% Confidence Interval.
-It also has the R-squared and Root-Mean-Squared Error statistics for the pre-intervention period.
+{synoptset 20 tabbed}{...}
+{p2col 5 20 24 2: Scalars}{p_end}
+{synopt:{cmd:e(T1)}}number of pre-intervention periods.{p_end}
+{synopt:{cmd:e(T0)}}treatment point.{p_end}
+{synopt:{cmd:e(T2)}}number of post-intervention periods{p_end}
+{synopt:{cmd:e(T)}}number of time periods.{p_end}
+{synopt:{cmd:e(r2)}}R-Squared for FDID in pre-intervention period.{p_end}
+{synopt:{cmd:e(DDr2)}}R-Squared for DID model with all controls.{p_end}
+{synopt:{cmd:e(rmse)}}Pre-intervention root mean squared error.{p_end}
+{synopt:{cmd:e(N0)}}Number of controls.{p_end}
+{synopt:{cmd:e(N0U)}}Number of controls selected by FDID.{p_end}
+{synopt:{cmd:e(CILB)}}Lower Bound of ATT, 95% Confidence Interval.{p_end}
+{synopt:{cmd:e(ATT)}}Average Treatment Effect on the Treated Unit.{p_end}
+{synopt:{cmd:e(CIUB)}}Upper Bound of ATT, 95% Confidence Interval.{p_end}
+{synopt:{cmd:e(se)}}Standard Error of ATT.{p_end}
+{synopt:{cmd:e(tstat)}}t-statistic of ATT.{p_end}
 
-{p 8 8 2}
-{cmd: r(series):}{p_end}
-{p 10 10 2}
-A matrix containing the time, observed values, counterfactual values, pointwise treatment effect, and event time.
+{synoptset 20 tabbed}{...}
+{p2col 5 20 24 2: Macros}{p_end}
+{synopt:{cmd:e(U)}}list of selected controls.{p_end}
 
-{p 8 8 2}
-{cmd: r(U):}{p_end}
-{p 10 10 2}
-A macro containing the list of selected units chosen by the forward selection algorithm.
-
-{p 4 8 2}
-If there are many treated units, {cmd:fdid} returns the following:
-
-{p 8 8 2}
-{cmd: r(results):}{p_end}
-{p 10 10 2}
-A matrix containing the results from the table, including the ATT, standard error, t-statistic, and the upper and lower bounds of the 95% Confidence Interval.
-
-{synoptline}
-
-{title:Frames}
-{p 4 8 2}
-{cmd:fdid} returns a frame for the user's convenience.
-
-{p 10 10 2}
-{cmd:fdid_cfframe}: Contains the outcome vector for the treated unit, the counterfactual vector, the time period, and the pointwise treatment effect.
-If many units are treated, then we have one frame per treated unit, with the names of the selected control units in the {help notes}.
+{synoptset 20 tabbed}{...}
+{p2col 5 20 24 2: Matrices}{p_end}
+{synopt:{cmd:e(series)}}A matrix containing the time, observed values, counterfactual values, pointwise treatment effect, and event time.{p_end}
+{synopt:{cmd:e(results)}}Table of results (ATT, SE, t, CI, pvalue){p_end}
 
 
 {marker examples}{...}
@@ -153,8 +153,6 @@ Replicating HCW2012
 {stata "fdid gdp, tr(treat) unitnames(state)"}
 
 {phang}
-
-For a more extended walkthrough, see the {browse "https://github.com/jgreathouse9/FDIDTutorial/blob/main/StataVignette.md":vignette}.
 
 
 {hline}

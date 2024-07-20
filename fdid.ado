@@ -25,7 +25,7 @@ set varabbrev off
 
 * 2. Program
 
-prog define fdid, rclass
+prog define fdid, eclass
 
 cap frame drop __reshape
 qui frame 
@@ -63,7 +63,7 @@ _xtstrbal `panel' `time' `touse'
 	syntax anything [if], ///
 		TReated(varname) /// We need a treatment variable as 0 1
 		[gr1opts(string asis)] [gr2opts(string asis)] ///
-		[unitnames(varlist max=1 string)] [cfframename(string asis)]
+		[unitnames(varlist max=1 string)]
 		
 
 		
@@ -226,7 +226,7 @@ est_dd, time(`time') ///
 	cfframe(`defname') ntr(`nwords')
 	
         if `nwords' > 1 {
-            matrix resmat = e(ATTs)
+            matrix resmat = e(results)
             matrix combined_matrix = combined_matrix \ resmat
         }
 
@@ -234,13 +234,9 @@ est_dd, time(`time') ///
 
 if `nwords'==1 {
 
-loc optimalcontrols: di e(selected)
-mat resmat =e(ATTs)
-return loc U =  "`optimalcontrols'"
-return mat results = resmat
+
 mat series = e(series)
-return mat series= series
-ereturn clear
+ereturn mat series= series
 }
 }
 
@@ -298,8 +294,8 @@ matrix `my_matrix' = (scalar(ATT_combined), scalar(SE_combined), scalar(tstat), 
 matrix colnames `my_matrix' = ATT SE t LB UB
 
 matrix rownames `my_matrix' = Result
-
-return mat results= `my_matrix'
+ereturn clear
+ereturn mat results= `my_matrix'
 
 }
 cwf `originalframe'
@@ -508,6 +504,8 @@ local strings `r(varlist)'
 local trtime `treated_unit' `time'
 
 local predictors: list strings- trtime
+
+loc N0: word count `predictors'
 
 // Set U is a now empty set. It denotes the order of all units whose values,
 // when added to DID maximize the pre-period r-squared.
@@ -779,7 +777,8 @@ loc grname name(`fitname_cleaned', replace)
 	
 }
 
-twoway (connected `treated_unit' `time', connect(direct) msymbol(smdiamond)) (connected cf `time', lpat(--) msymbol(smsquare)), ///
+twoway (line `treated_unit' `time', lcol(black) lwidth(medthick) lpat(solid)) ///
+(line cf `time', lpat(solid) lwidth(medium) lcol("0 46 255")), ///
 yti("`treatst' `outlab'") ///
 legend(order(1 "Observed" 2 "FDID") pos(12)) ///
 xli(`interdate', lcol(gs6) lpat(--)) `grname' `gr1opts'
@@ -878,7 +877,8 @@ yli(0, lpat(-)) xli(0, lwidth(vthin)) name(gap`treatst', replace) `gr2opts'
 }
 
 loc rmseround: di %9.5f `RMSE'
-qui keep eventtime `time' te `treated_unit' cf
+qui keep eventtime `time' `treated_unit' cf te 
+
 qui mkmat *, mat(series)
 
 scalar SE = scalar(ohat)/sqrt(scalar(t2))
@@ -887,13 +887,42 @@ scalar tstat = abs(scalar(ATT)/(scalar(SE)))
 tempname my_matrix
 matrix `my_matrix' = (scalar(ATT), scalar(SE), scalar(tstat), scalar(CILB), scalar(CIUB), scalar(r2), `rmseround')
 matrix colnames `my_matrix' = ATT SE t LB UB R2 RMSE
-
+ereturn clear
 matrix rownames `my_matrix' = Statistics
 
-ereturn loc selected "`controls'"
-ereturn mat ATTs = `my_matrix'
+ereturn loc U "`controls'"
+ereturn mat results = `my_matrix'
 
 ereturn mat series = series
+
+ereturn scalar T1 = `t1'
+ereturn scalar T0= `t1'+1
+ereturn scalar T2 = `t2'
+
+ereturn scalar T= `t1'+`t2'
+
+ereturn scalar r2 = scalar(r2)
+
+ereturn scalar DDr2 = `r2'
+
+ereturn scalar rmse = `RMSE'
+
+ereturn scalar N0 = `N0'
+
+loc N0U: word count `best_model'
+
+ereturn scalar N0U =  `N0U'
+
+ereturn scalar CILB = scalar(CILB)
+
+ereturn scalar ATT = scalar(ATT)
+
+ereturn scalar CIUB = scalar(CIUB)
+
+ereturn scalar se = scalar(SE)
+
+ereturn scalar tstat = scalar(tstat)
+
 
 
 scalar ATT_std_DID = scalar(t2) * scalar(ATT) / scalar(ohat)
