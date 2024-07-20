@@ -43,7 +43,7 @@ FDID selects philippines, singapore, thailand, norway, mexico, korea, indonesia,
 See Li (2024) for technical details.
 ```
 
-Here is the plot:
+Pleasingly, these are the exact same results Kathy gets in her MATLAB code.. Here is the plot:
 <p align="center">
   <img src="fithongkong.png" alt="Alt Text">
 </p>
@@ -89,9 +89,8 @@ r(results)[1,7]
                   ATT         SE          t         LB         UB         R2       RMSE
 Statistics  .02540494  .00462405  5.4940862  .01634196  .03446791   .8427835     .01638
 ```
-Pleasingly, these are the exact same results Kathy gets in her MATLAB code. Another thing to note 
 
-## Staggered Adoption
+# Staggered Adoption
 
 Okay let's do staggered adoption. We begin by pulling in and cleaning the smoking data.
 ```stata
