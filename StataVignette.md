@@ -1,19 +1,16 @@
 # ```fdid``` for Stata Users
 
-I've already covered the basics of the algorithm in [the Python vignette](https://github.com/jgreathouse9/FDIDTutorial/blob/main/Vignette.md), so I will not repeat myself. This note simply demonstrates how to use FDID for Stata 16 and up. No special commands are needed to use ```fdid```.
+I've already covered the basics of the algorithm in [the Python vignette](https://github.com/jgreathouse9/FDIDTutorial/blob/main/Vignette.md), so I will not repeat myself regarding the basic algorithm and theory. This note simply demonstrates how to use FDID for Stata 16 and up. No special commands are needed to use ```fdid```.
 
 First we install ```fdid``` and its help file into Stata like
 
 ```stata
 net inst fdid, from("https://raw.githubusercontent.com/jgreathouse9/FDIDTutorial/main") replace
 ```
-
 We can get the datasets I include like
-
 ```stata
 net get fdid, all
 ```
-
 # HCW
 
 The one we're replicating here is [the HCW dataset](https://doi.org/10.1002/jae.1230). We begin by importing the data
@@ -81,7 +78,7 @@ matrices:
             e(results) :  1 x 7
 
 ```
-The ``er(series)``` is a matrix containing the observed and counterfactual values, event time, individual treatment effects. Naturally, the other statistics pertain to the total number of controls, the number of controls selected, as well as inferential statistics
+The ```e(series)``` is a matrix containing the observed and counterfactual values, event time, individual treatment effects. Naturally, the other statistics pertain to the total number of controls, the number of controls selected, as well as inferential statistics. Note that the fact we have a sparse control group selected (i.e., we didn't select 20 controls) demonstrates the effectiveness of choosing a much smaller subset of controls
 
 The results themselves can also be conveniently accessed like
 ```stata
@@ -92,23 +89,7 @@ r(results)[1,7]
                   ATT         SE          t         LB         UB         R2       RMSE
 Statistics  .02540494  .00462405  5.4940862  .01634196  .03446791   .8427835     .01638
 ```
-Pleasingly, these are the exact same results Kathy gets in her MATLAB code.
-
-Frames, labeled by default *fdidcfframe* *panelid*, are also returned.
-
-```stata
-frame dir
-```
-returns
-
-```
-
-  default        1525 x 5; hcw.dta
-* fdid_cfframe9  61 x 5
-
-Note: Frames marked with * contain unsaved data.
-```
-These contain the observed and counterfactual values, the pointwise treatment effect and its standard error, as well as the event time variable.
+Pleasingly, these are the exact same results Kathy gets in her MATLAB code. Another thing to note 
 
 ## Staggered Adoption
 
