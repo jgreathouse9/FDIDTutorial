@@ -19,16 +19,13 @@ The one we're replicating here is [the HCW dataset](https://doi.org/10.1002/jae.
 u "hcw.dta", clear
 ```
 
-Here, we study the impact of Hong Kong's [economic integreation](https://www.henleyglobal.com/residence-investment/hong-kong/cepa-hong-kong-china). To do this in Stata, we simply do
-
+Here, we study the impact of Hong Kong's [economic integreation](https://www.henleyglobal.com/residence-investment/hong-kong/cepa-hong-kong-china). We have 44 pretreatment periods and 17 post-treatment periods. Our goal is to estimate the impact for those final 17 periods. To estimate ```fdid```, we simply do
 ```stata
 fdid gdp, tr(treat) unitnames(state) ///
 gr1opts(scheme(plottig) ti(Forward DID Analysis) /// using plottig: https://www.stata.com/meeting/switzerland16/slides/bischof-switzerland16.pdf
 yti(GDP Growth) note(Treatment is Economic Integration with Mainland China) legend(order(1 "Hong Kong" 2 "FDID Counterfactual") pos(12)))
 ```
-
 We specify the outcome of interest as ```gdp``` and we specify the treatment as ```treat```. We use the strings of the ```state``` variable to define the names of our units. This syntax produces the table
-
 ```stata
 
 Forward Difference-in-Differences          T0 R2:  0.84278     T0 RMSE:  0.01638
@@ -43,7 +40,7 @@ FDID selects philippines, singapore, thailand, norway, mexico, korea, indonesia,
 See Li (2024) for technical details.
 ```
 
-Pleasingly, these are the exact same results Kathy gets in her MATLAB code.. Here is the plot:
+Pleasingly, these are the exact same results Kathy gets in her MATLAB code. Here is the plot:
 <p align="center">
   <img src="fithongkong.png" alt="Alt Text">
 </p>
