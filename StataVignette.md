@@ -54,21 +54,39 @@ Here is the plot:
 If we wish to see the returned results, we can do
 ```stata
 
-return list
+ereturn list
+
+
+scalars:
+                 e(T1) =  44
+                 e(T0) =  45
+                 e(T2) =  17
+                  e(T) =  61
+                 e(r2) =  .8427835023827471
+               e(DDr2) =  .6314109945674563
+               e(rmse) =  .0163795002757948
+                 e(N0) =  24
+                e(N0U) =  9
+               e(CILB) =  .0163419634847637
+                e(ATT) =  .0254049380035961
+               e(CIUB) =  .0344679125224286
+                 e(se) =  .0046240515592736
+              e(tstat) =  5.494086231077255
 
 macros:
-                  r(U) : "philippines, singapore, thailand, norway, mexico, korea, indonesia, newzealand, malaysia,"
+                  e(U) : "philippines, singapore, thailand, norway, mexico, korea, indonesia, newzealand, malaysia,"
 
 matrices:
-             r(series) :  61 x 5
-            r(results) :  1 x 7
+             e(series) :  61 x 5
+            e(results) :  1 x 7
+
 ```
-The ```r(series)``` is a matrix containing the observed and counterfactual values, event time, individual treatment effects, and the standard error for the treatment effect.
+The ``er(series)``` is a matrix containing the observed and counterfactual values, event time, individual treatment effects. Naturally, the other statistics pertain to the total number of controls, the number of controls selected, as well as inferential statistics
 
 The results themselves can also be conveniently accessed like
 ```stata
 
-mat l r(results)
+mat l e(results)
 
 r(results)[1,7]
                   ATT         SE          t         LB         UB         R2       RMSE
