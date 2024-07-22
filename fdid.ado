@@ -656,13 +656,13 @@ order `U', a(`treated_unit')
 
 tempvar ymean rss tss
 
-	egen `ymean' = rowmean(`U')
+	egen ymeandid = rowmean(`U')
 
 
-	constraint define 1 `ymean' = 1
+	constraint define 1 ymeandid = 1
 
 
-	qui cnsreg `treated_unit' `ymean' if `time' < `interdate', constraints(1)
+	qui cnsreg `treated_unit' ymeandid if `time' < `interdate', constraints(1)
 
 	qui predict cfdd
 	
@@ -749,20 +749,20 @@ cwf `cfframe'
 
 qui frlink 1:1 `time', frame(`__reshape')
 
-qui frget `treated_unit' `best_model' cfdd, from(`__reshape')
+qui frget `treated_unit' `best_model' cfdd ymeandid, from(`__reshape')
 
 //di as txt "{hline}"
 
-egen ymean = rowmean(`best_model')
+egen ymeanfdid = rowmean(`best_model')
 
 
 // And estimate DID again.
 
 * Define the constraint
-constraint define 1 ymean = 1
+constraint define 1 ymeanfdid = 1
 
 * Run the constrained regression
-qui cnsreg `treated_unit' ymean if `time' < `interdate', constraints(1)
+qui cnsreg `treated_unit' ymeanfdid if `time' < `interdate', constraints(1)
 loc RMSE = e(rmse)
 
 qui predict cf
@@ -947,7 +947,7 @@ yli(0, lpat(-)) xli(0, lwidth(vthin)) name(gap`treatst', replace) `gr2opts'
 
 
 loc rmseround: di %9.5f `RMSE'
-qui keep eventtime `time' `treated_unit' cf cfdd te ddte
+qui keep eventtime `time' `treated_unit' cf cfdd te ddte ymeanfdid ymeandid
 
 qui mkmat *, mat(series)
 
