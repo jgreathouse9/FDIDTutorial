@@ -1,6 +1,5 @@
 *****************************************************
 set more off
-set varabbrev off
 
 *****************************************************
 
@@ -49,6 +48,26 @@ if _rc {
 	disp as err "The data are not xtset"
 	exit 498
 }
+
+cap qui xtset
+
+cap as r(balanced)=="strongly balanced"
+
+if _rc {
+	disp as err "The data must be strongly balanced"
+	exit 498	
+	
+}
+
+cap as r(gaps)==0
+
+
+if _rc {
+	disp as err "The data cannot have gaps"
+	exit 498	
+	
+}
+
 
 loc time: disp "`r(timevar)'"
 
@@ -817,11 +836,11 @@ loc grname name(`fitname_cleaned', replace)
 	
 }
 
-twoway (line `treated_unit' `time', lcol(black) lwidth(medthick) lpat(solid)) ///
-(line cf `time', lpat(solid) lwidth(medium) lcol("0 46 255")) ///
-(line cfdd `time', lpat(solid) lwidth(medium) lcol("red")), ///
+twoway (line `treated_unit' `time', lcol(black) lwidth(thick) lpat(solid)) ///
+(line cf `time', lpat(dash) lwidth(medthick) lcol(gs10)) ///
+(line cfdd `time', lpat(shortdash) lwidth(medthick) lcol(gs6)), ///
 yti("`treatst' `outlab'") ///
-legend(order(1 "Observed" 2 "FDID" 3 "DD") pos(12)) ///
+legend(order(1 "Observed" 2 "FDID" 3 "DD")) ///
 xli(`interdate', lcol(gs6) lpat(--)) `grname' `gr1opts'
 
 }
@@ -959,52 +978,65 @@ ereturn scalar T2 = `t2'
 
 ereturn scalar T= `t1'+`t2'
 
-ereturn scalar r2 = scalar(r2)
 
-ereturn scalar DDr2 = scalar(DDr2)
+* Assuming you want to round to 3 decimal places for most values and 2 for others
+* Round the scalar r2 to 3 decimal places
+ereturn scalar r2 = round(scalar(r2), 0.001)
 
-ereturn scalar rmse = `RMSE'
+* Round the scalar DDr2 to 3 decimal places
+ereturn scalar DDr2 = round(scalar(DDr2), 0.001)
 
-ereturn scalar N0 = `N0'
+* Round the scalar rmse to 3 decimal places
+ereturn scalar rmse = round(`RMSE', 0.001)
 
-loc N0U: word count `best_model'
+* Assign the local N0U to the count of words in best_model and round if needed
+local N0U: word count `best_model'
+ereturn scalar N0U = `N0U'  // No rounding needed as this is a count
 
-ereturn scalar N0U =  `N0U'
-ereturn scalar DDATT = DDATT
-ereturn scalar pDDATT = scalar(pATTDD)
+* Round the scalar DDATT to 3 decimal places
+ereturn scalar DDATT = round(scalar(DDATT), 0.001)
 
-ereturn scalar pATT = scalar(pATT)
+* Round the scalar pDDATT to 3 decimal places
+ereturn scalar pDDATT = round(scalar(pATTDD), 0.001)
 
-ereturn scalar CILB = scalar(CILB)
+* Round the scalar pATT to 3 decimal places
+ereturn scalar pATT = round(scalar(pATT), 0.001)
 
-ereturn scalar ATT = scalar(ATT)
-ereturn scalar CIUB = scalar(CIUB)
-ereturn scalar se = scalar(SE)
-ereturn scalar tstat = scalar(tstat)
+* Round the scalar CILB to 3 decimal places
+ereturn scalar CILB = round(scalar(CILB), 0.001)
 
+* Round the scalar ATT to 3 decimal places
+ereturn scalar ATT = round(scalar(ATT), 0.001)
 
-scalar ATT_std_DID = scalar(t2) * scalar(ATT) / scalar(ohat)
+* Round the scalar CIUB to 3 decimal places
+ereturn scalar CIUB = round(scalar(CIUB), 0.001)
+
+* Round the scalar se to 3 decimal places
+ereturn scalar se = round(scalar(SE), 0.0001)
+
+* Round the scalar tstat to 2 decimal places
+ereturn scalar tstat = round(scalar(tstat), 0.01)
+
 
 scalar p_value = 2 * (1 - normal(scalar(tstat)))
 
 local tabletitle "Forward Difference-in-Differences"
 
 if `ntr' == 1 {
-* Clear any previous display
-di as text ""
+
 di as text ""
 
-* Display the table title and initial metrics
+
 di as res "`tabletitle'" "          " "T0 R2: " %9.3f scalar(r2) "     T0 RMSE: " %9.3f `RMSE'
 di as text ""
 di as text "{hline 13}{c TT}{hline 75}"
 
-* Display the column headers
-di as text %12s abbrev("`outcome'",12) " {c |}     ATT     PATT     Std. Err.     t      P>|t|    [95% Conf. Interval]" 
+
+di as text %12s abbrev("`outcome'",12) " {c |}     ATT       Std. Err.      t       P>|t|    [95% Conf. Interval]" 
 di as text "{hline 13}{c +}{hline 75}"
 
-* Display the results row
-di as text %12s abbrev("`treatment'",12) " {c |} " %9.3f scalar(ATT) " " %9.3f scalar(pATT) " " %9.3f scalar(SE) " " %9.2f scalar(tstat) " " %9.3f scalar(p_value) "   " %9.3f scalar(CILB) "   " %9.3f scalar(CIUB)
+
+di as text %12s abbrev("`treatment'",12) " {c |} "%9.5f scalar(ATT) "   "  %9.5f scalar(SE) "  " %9.2f scalar(tstat) " " %9.3f scalar(p_value) "    " %9.5f scalar(CILB) "  " %9.5f scalar(CIUB)
 di as text "{hline 13}{c BT}{hline 75}"
 
 * Display the footer information

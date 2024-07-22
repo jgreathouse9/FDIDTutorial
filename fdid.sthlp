@@ -1,13 +1,9 @@
 {smcl}
-{* *! version 1.0.0  14jul2024}{...}
-{findalias asfradohelp}{...}
-{vieweralsosee "" "--"}{...}
-{vieweralsosee "[R] help" "help help"}{...}
-{viewerjumpto "Syntax" "examplehelpfile##syntax"}{...}
+{* *! version 1.0.0  22jul2024}{...}
+{viewerjumpto "Syntax" "fdid##syntax"}{...}
 {viewerjumpto "Description" "examplehelpfile##description"}{...}
-{viewerjumpto "Options" "examplehelpfile##options"}{...}
-{viewerjumpto "Remarks" "examplehelpfile##remarks"}{...}
-{viewerjumpto "Examples" "examplehelpfile##examples"}{...}
+{viewerjumpto "Options" "fdid##options"}{...}
+{viewerjumpto "Examples" "fdid##examples"}{...}
 {title:Forward Difference in Differences}
 
 {phang}
@@ -154,20 +150,6 @@ Replicating HCW2012
 {stata "u hcw, clear"}
 
 {stata "fdid gdp, tr(treat) unitnames(state)"}
-
-clear *
-
-
-import delim "https://raw.githubusercontent.com/OscarEngelbrektson/SyntheticControlMethods/master/examples/datasets/smoking_data.csv"
-
-
-g treated = cond(state=="California" & year >= 1989,1,0)
-egen id = group(state)
-xtset id year, y
-
-
-cls
-fdid cigsale, tr(treated) unitnames(state) gr1opts(scheme(plottig))
 
 
 {phang}
