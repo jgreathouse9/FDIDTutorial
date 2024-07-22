@@ -830,7 +830,7 @@ loc grname name(`fitname_cleaned', replace)
 }
 
 twoway (line `treated_unit' `time', lcol(black) lwidth(medthick) lpat(solid)) ///
-(line cf `time', lpat(dash) lwidth(vthin) lcol(gs10)) ///
+(line cf `time', lpat(dash) lwidth(thin) lcol(gs10)) ///
 (line cfdd `time', lpat(shortdash) lwidth(medthick) lcol(gs6)), ///
 yti("`treatst' `outlab'") ///
 legend(order(1 "Observed" 2 "FDID" 3 "DD")) ///
