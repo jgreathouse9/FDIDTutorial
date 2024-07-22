@@ -21,4 +21,7 @@ d
 f fdid.ado
 f fdid.sthlp
 f hcw.dta
-f agbasque.dta
+f basque.dta
+f barcelona.dta
+f smoking.dta
+f fdid_test.do
