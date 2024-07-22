@@ -87,6 +87,25 @@ r(results)[1,7]
 Statistics  .02540494  .00462405  5.4940862  .01634196  .03446791   .8427835     .01638
 ```
 
+# Proposition 99
+
+Next, I'd like to replicate one of the more classic papers in synthetic control methods, the case of Proposition 99 for California. Prop 99 was an anti-tobacco campaign that sought to reduce the rate of smoking in the population via education, awareness, and taxation. To run this, we do
+
+```stata
+qui u smoking, clear
+
+fdid cigsale, tr(treated) unitnames(state) gr1opts(scheme(sj) name(p99, replace))
+```
+which returns the plot
+
+<p align="center">
+  <img src="fitCali.png" alt="Alt Text">
+</p>
+
+# Anonymous Donors
+
+Before we continue on to staggered Adoption
+
 # Staggered Adoption
 
 Okay let's do staggered adoption. We begin by pulling in and cleaning the smoking data.
