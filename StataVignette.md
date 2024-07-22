@@ -56,23 +56,26 @@ scalars:
                  e(T0) =  45
                  e(T2) =  17
                   e(T) =  61
-                 e(r2) =  .8427835023827471
-               e(DDr2) =  .6314109945674563
-               e(rmse) =  .0163795002757948
-                 e(N0) =  24
+                 e(r2) =  .843
+               e(DDr2) =  .505
+               e(rmse) =  .016
                 e(N0U) =  9
-               e(CILB) =  .0163419634847637
-                e(ATT) =  .0254049380035961
-               e(CIUB) =  .0344679125224286
-                 e(se) =  .0046240515592736
-              e(tstat) =  5.494086231077255
+              e(DDATT) =  .032
+             e(pDDATT) =  77.62
+               e(pATT) =  53.843
+               e(CILB) =  .016
+                e(ATT) =  .025
+               e(CIUB) =  .034
+                 e(se) =  .0046
+              e(tstat) =  5.49
 
 macros:
                   e(U) : "philippines, singapore, thailand, norway, mexico, korea, indonesia, newzealand, malaysia,"
 
 matrices:
-             e(series) :  61 x 5
-            e(results) :  1 x 7
+             e(series) :  61 x 7
+            e(results) :  1 x 8
+
 
 ```
 The ```e(series)``` is a matrix containing the observed and counterfactual values, event time, individual treatment effects. Naturally, the other statistics pertain to the total number of controls, the number of controls selected, as well as inferential statistics. Note that the fact we have a sparse control group selected (i.e., we didn't select 20 controls) demonstrates the effectiveness of choosing a much smaller subset of controls
