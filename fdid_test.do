@@ -1,10 +1,3 @@
-cd "C:\The Shop\StataFDIDTest"
-
-net inst fdid, from("https://raw.githubusercontent.com/jgreathouse9/FDIDTutorial/main") replace
-
-net get fdid
-
-
 qui {
 clear *
 set varabbrev off
