@@ -148,7 +148,7 @@ qui levelsof `panel' if `treated'==1, loc(trunit)
 local nwords :  word count `trunit'
 
 if `nwords' > 1 {
-    matrix empty_matrix = J(1, 7, .)  // Initialize an empty matrix with 0 rows and 7 columns
+    matrix empty_matrix = J(1, 8, .)  // Initialize an empty matrix with 0 rows and 7 columns
 
     matrix combined_matrix = empty_matrix  // Initialize combined_matrix as empty
 }
@@ -247,17 +247,20 @@ cwf fdidmatrixres
 	
 * Convert the matrix "results" into a dataset named "myresults"
 qui svmat combined_matrix, names(col)
-
-keep c1 c2
+keep c1 c2 c3
 
 qui drop in 1
 
-qui rename (*) (ATT SE)
+qui rename (*) (ATT PATT SE)
 
 qui su ATT, mean
 
 // Calculate the combined ATT
 scalar ATT_combined = r(mean)
+
+qui su PATT, mean
+
+scalar PATT_combined = r(mean)
 
 qui su SE
 
@@ -278,20 +281,29 @@ scalar CI_upper = scalar(ATT_combined) + (invnormal(0.975) * scalar(SE_combined)
     // Calculate p-value (two-sided)
     scalar p_value = 2 * (1 - normal(abs(scalar(tstat))))
 
+* Clear any previous display
 di as text ""
-di as res "Staggered Forward Difference-in-Differences"
-di as text "{hline 13}{c TT}{hline 63}"
-di as text %12s abbrev("`depvar'",12) " {c |}     ATT     Std. Err.     t      P>|t|    [95% Conf. Interval]" 
-di as text "{hline 13}{c +}{hline 63}"
-di as text %12s abbrev("`treated'",12) " {c |} " as result %9.5f scalar(ATT_combined) "  " %9.5f scalar(SE_combined) %9.2f scalar(tstat) %9.3f scalar(p_value) "   " %9.5f scalar(CI_lower) "   " %9.5f scalar(CI_upper)
-di as text "{hline 13}{c BT}{hline 63}"
+di as text ""
+
+* Display the table title and initial metrics
+di as res "`tabletitle'" "          " "T0 R2: " %9.3f scalar(r2) "     T0 RMSE: " %9.3f `RMSE'
+di as text ""
+di as text "{hline 13}{c TT}{hline 75}"
+
+* Display the column headers
+di as text %12s abbrev("`outcome'",12) " {c |}     ATT     PATT     Std. Err.     t      P>|t|    [95% Conf. Interval]" 
+di as text "{hline 13}{c +}{hline 75}"
+
+* Display the results row
+di as text %12s abbrev("`treatment'",12) " {c |} " %9.3f scalar(ATT) " " %9.3f scalar(pATT) " " %9.3f scalar(SE) " " %9.2f scalar(tstat) " " %9.3f scalar(p_value) "   " %9.3f scalar(CILB) "   " %9.3f scalar(CIUB)
+di as text "{hline 13}{c BT}{hline 75}"
 di as text "See Li (2024) for technical details."
 di as text "Effects are calculated in event-time using never-treated units."
 
 
 tempname my_matrix
-matrix `my_matrix' = (scalar(ATT_combined), scalar(SE_combined), scalar(tstat), scalar(CI_lower), scalar(CI_upper))
-matrix colnames `my_matrix' = ATT SE t LB UB
+matrix `my_matrix' = (scalar(ATT_combined), scalar(PATT_combined), scalar(SE_combined), scalar(tstat), scalar(CI_lower), scalar(CI_upper))
+matrix colnames `my_matrix' = ATT PATT SE t LB UB
 
 matrix rownames `my_matrix' = Result
 ereturn clear
@@ -523,12 +535,6 @@ tempname max_r2
 
 
 // Forward Selection Algorithm ...
-if `ntr' == 1 {
-di ""
-    di "Selecting the optimal donors via Forward Selection..."
-    di "----+--- 1 ---+--- 2 ---+--- 3 ---+--- 4 ---+--- 5"
-
-}
   
 qui summarize `treated_unit'
 local mean_observed = r(mean)
@@ -636,6 +642,40 @@ order `U', a(`treated_unit')
 * the R2 statistic. We then in succession add the next best unit, and the next best one...
 * until we have estimated N0 DID models. We wish to get the model which maximizes R2.
 
+tempvar ymean rss tss
+
+	egen `ymean' = rowmean(`U')
+
+
+	constraint define 1 `ymean' = 1
+
+
+	qui cnsreg `treated_unit' `ymean' if `time' < `interdate', constraints(1)
+
+	qui predict cfdd
+	
+	
+	
+	* Calculate the mean of observed values
+	qui summarize `treated_unit' if `time' < `interdate'
+	local mean_observed = r(mean)
+
+	* Calculate the Total Sum of Squares (TSS)
+	qui generate double `tss' = (`treated_unit' - `mean_observed')^2 if `time' < `interdate'
+	qui summarize `tss' if `time' < `interdate'
+	local TSS = r(sum)
+
+	* Calculate the Residual Sum of Squares (RSS)
+	qui generate double `rss' = (`treated_unit' - cfdd)^2 if `time' < `interdate'
+	qui summarize `rss' if `time' < `interdate'
+	local RSS = r(sum)
+
+	* Calculate and display R-squared
+	loc r2dd = 1 - (`RSS' / `TSS')
+	
+	scalar DDr2 = `r2dd'
+	
+
 * Initialize an empty local to build the variable list
 
 local varlist
@@ -697,7 +737,7 @@ cwf `cfframe'
 
 qui frlink 1:1 `time', frame(`__reshape')
 
-qui frget `treated_unit' `best_model', from(`__reshape')
+qui frget `treated_unit' `best_model' cfdd, from(`__reshape')
 
 //di as txt "{hline}"
 
@@ -778,9 +818,10 @@ loc grname name(`fitname_cleaned', replace)
 }
 
 twoway (line `treated_unit' `time', lcol(black) lwidth(medthick) lpat(solid)) ///
-(line cf `time', lpat(solid) lwidth(medium) lcol("0 46 255")), ///
+(line cf `time', lpat(solid) lwidth(medium) lcol("0 46 255")) ///
+(line cfdd `time', lpat(solid) lwidth(medium) lcol("red")), ///
 yti("`treatst' `outlab'") ///
-legend(order(1 "Observed" 2 "FDID") pos(12)) ///
+legend(order(1 "Observed" 2 "FDID" 3 "DD") pos(12)) ///
 xli(`interdate', lcol(gs6) lpat(--)) `grname' `gr1opts'
 
 }
@@ -835,7 +876,11 @@ scalar `t1' = r(N)
 
 g te = `treated_unit' - cf
 
+g ddte =`treated_unit'-cfdd
+
 lab var te "Pointwise Treatment Effect"
+lab var ddte "Pointwise DD Treatment Effect"
+
 qui g eventtime = `time'-`interdate'
 
 
@@ -861,10 +906,22 @@ qui su te if `time' >= `interdate'
 
 scalar ATT = r(mean)
 
+qui su cf if eventtime >=0 
+
+scalar pATT =  100*scalar(ATT)/r(mean)
+
+
 scalar CILB = scalar(ATT) - (((invnormal(0.975) * scalar(ohat)))/sqrt(scalar(t2)))
 
 scalar CIUB =  scalar(ATT) + (((invnormal(0.975) * scalar(ohat)))/sqrt(scalar(t2)))
 
+qui su ddte if eventtime >= 0, mean
+scalar DDATT = r(mean)
+
+
+qui su cfdd if eventtime >=0 
+
+scalar pATTDD =  100*scalar(DDATT)/r(mean)
 
 
 if ("`gr2opts'" ~= "") {
@@ -876,8 +933,9 @@ yti("Pointwise Treatment Effect") ///
 yli(0, lpat(-)) xli(0, lwidth(vthin)) name(gap`treatst', replace) `gr2opts'
 }
 
+
 loc rmseround: di %9.5f `RMSE'
-qui keep eventtime `time' `treated_unit' cf te 
+qui keep eventtime `time' `treated_unit' cf cfdd te ddte
 
 qui mkmat *, mat(series)
 
@@ -885,8 +943,8 @@ scalar SE = scalar(ohat)/sqrt(scalar(t2))
 scalar tstat = abs(scalar(ATT)/(scalar(SE)))
 
 tempname my_matrix
-matrix `my_matrix' = (scalar(ATT), scalar(SE), scalar(tstat), scalar(CILB), scalar(CIUB), scalar(r2), `rmseround')
-matrix colnames `my_matrix' = ATT SE t LB UB R2 RMSE
+matrix `my_matrix' = (scalar(ATT), scalar(pATT), scalar(SE), scalar(tstat), scalar(CILB), scalar(CIUB), scalar(r2), `rmseround')
+matrix colnames `my_matrix' = ATT PATT SE t LB UB R2 RMSE
 ereturn clear
 matrix rownames `my_matrix' = Statistics
 
@@ -903,7 +961,7 @@ ereturn scalar T= `t1'+`t2'
 
 ereturn scalar r2 = scalar(r2)
 
-ereturn scalar DDr2 = `r2'
+ereturn scalar DDr2 = scalar(DDr2)
 
 ereturn scalar rmse = `RMSE'
 
@@ -912,17 +970,17 @@ ereturn scalar N0 = `N0'
 loc N0U: word count `best_model'
 
 ereturn scalar N0U =  `N0U'
+ereturn scalar DDATT = DDATT
+ereturn scalar pDDATT = scalar(pATTDD)
+
+ereturn scalar pATT = scalar(pATT)
 
 ereturn scalar CILB = scalar(CILB)
 
 ereturn scalar ATT = scalar(ATT)
-
 ereturn scalar CIUB = scalar(CIUB)
-
 ereturn scalar se = scalar(SE)
-
 ereturn scalar tstat = scalar(tstat)
-
 
 
 scalar ATT_std_DID = scalar(t2) * scalar(ATT) / scalar(ohat)
@@ -932,17 +990,28 @@ scalar p_value = 2 * (1 - normal(scalar(tstat)))
 local tabletitle "Forward Difference-in-Differences"
 
 if `ntr' == 1 {
+* Clear any previous display
 di as text ""
 di as text ""
-di as res "`tabletitle'"  "          " "T0 R2:" %9.5f scalar(r2) "     T0 RMSE:" %9.5f  `RMSE'
+
+* Display the table title and initial metrics
+di as res "`tabletitle'" "          " "T0 R2: " %9.3f scalar(r2) "     T0 RMSE: " %9.3f `RMSE'
 di as text ""
-di as text "{hline 13}{c TT}{hline 63}"
-di as text %12s abbrev("`outcome'",12) " {c |}     ATT     Std. Err.     t      P>|t|    [95% Conf. Interval]" 
-di as text "{hline 13}{c +}{hline 63}"
-di as text %12s abbrev("`treatment'",12) " {c |} " as result %9.5f scalar(ATT) "  " %9.5f scalar(SE) %9.2f scalar(tstat) %9.3f scalar(p_value) "   " %9.5f scalar(CILB) "   " %9.5f scalar(CIUB)
-di as text "{hline 13}{c BT}{hline 63}"
-di as txt "Treated Unit: `treatst'"
+di as text "{hline 13}{c TT}{hline 75}"
+
+* Display the column headers
+di as text %12s abbrev("`outcome'",12) " {c |}     ATT     PATT     Std. Err.     t      P>|t|    [95% Conf. Interval]" 
+di as text "{hline 13}{c +}{hline 75}"
+
+* Display the results row
+di as text %12s abbrev("`treatment'",12) " {c |} " %9.3f scalar(ATT) " " %9.3f scalar(pATT) " " %9.3f scalar(SE) " " %9.2f scalar(tstat) " " %9.3f scalar(p_value) "   " %9.3f scalar(CILB) "   " %9.3f scalar(CIUB)
+di as text "{hline 13}{c BT}{hline 75}"
+
+* Display the footer information
+di as text "Treated Unit: `treatst'"
 di as res "FDID selects `controls' as the optimal donors."
 di as text "See Li (2024) for technical details."
+
+
 }
 end
