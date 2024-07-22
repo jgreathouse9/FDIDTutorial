@@ -9,7 +9,7 @@ fdid gdp if inrange(time,1,45), tr(polint) unitnames(state) gr1opts(name(polint,
 
 qui u smoking, clear
 
-fdid cigsale, tr(treated) unitnames(state) gr1opts(scheme(sj) name(p99, replace)
+fdid cigsale, tr(treated) unitnames(state) gr1opts(scheme(sj) name(p99, replace))
 
 qui u basque, clear
 
