@@ -114,11 +114,52 @@ and the plot
   <img src="fitCali.png" alt="Alt Text">
 </p>
 
-As of July 22, 2024, I now plot the DID results by default so people can see how exactly DID compares to DID with the better control group. Next, I'll just quote [my notes](https://jgreathouse9.github.io/GSUmetricspolicy/treatmenteffects.html)
+We can prove that the same result is given in Stata's native ```xtdidregress```
+
+```stata
+xtdidregress (cigsale) (treated), group(id) time(year)
+```
+which returns
+```stata
+Number of groups and treatment time
+
+Time variable: year
+Control:       treated = 0
+Treatment:     treated = 1
+-----------------------------------
+             |   Control  Treatment
+-------------+---------------------
+Group        |
+          id |        38          1
+-------------+---------------------
+Time         |
+     Minimum |      1970       1989
+     Maximum |      1970       1989
+-----------------------------------
+
+Difference-in-differences regression                     Number of obs = 1,209
+Data type: Longitudinal
+
+                                    (Std. err. adjusted for 39 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+     cigsale | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+ATET         |
+     treated |
+   (1 vs 0)  |  -27.34911   2.802378    -9.76   0.000    -33.02223   -21.67599
+------------------------------------------------------------------------------
+Note: ATET estimate adjusted for panel effects and time effects.
+```
+We get the exact same result as I did in terms of the ATT. I don't compute the standard errors for ```fdid```, but these are by default cluster robust standard errors for ```xtdidregress```. Either way, we can see that the normal DID method has wider confidence intervals than FDID, having a width of 11.346 compared to ```fdid```'s width of 1.8.
+
+As of July 22, 2024, I now plot the DID results by default so people can see how exactly DID compares to FDID. Next, I'll just quote [my notes](https://jgreathouse9.github.io/GSUmetricspolicy/treatmenteffects.html):
 
 > The DID counterfactual underpredicts the true values for California in the pre-intervention period from around 1970 to 1975. Beyond this, it also overestimates the observed California’s values between 1980 and 1988. This is particularly bad because if your predictions diverge significantly from the treated unit’s observed values in the years right before the intervention takes place, why would we think that the post-intervention smoking consumption predictions are valid?
 
-This naturally has real implications for the analysis' findings. The DID counterfactual returns an ATT of -27.349, but the FDID counterfatual returns an ATT of -13.647. To put this another way, the estimates from FDID are basically half of the DID estimate. This is a colossal reduction of effect. Also of interest is that FDID selects 4 control states which, barring Utah, happen to be the exact same states as the original synthetic control method selected, on top of not needing to use retail price of cigarettes, age, income, taxation, and outcome lags to attain what is essentially the same results (which tend to vary between -13 and -19, depending on which flavor of SCM we use). Of course, this assumes that a uniformly weighted average is the ideal way to model the counterfactual, but the point here is that we can get very similar results to the findings of the original model using a relatively simpler estimator which also happens to be qualitatively similar. An added benefit of DID is that inference is more straightforward too.
+The R-squared of DID here is 0.604, versus FDID's R-squared of 0.988. This naturally has real implications for the analysis' findings. Because the fit for DID in the pre-intervention period is so poor (as a result of non-parallel trends holding across all control units), the DID method badly overestimates the causal effect, returning an ATT of -27.349. FDID fits much better. Its pre-intervention R-squared is higher than DID, meaning that the parallel trends assumption is much more likely to hold for FDID in this instance relative to DID. The effect sizes laso differ, with FDID returning an ATT of -13.647.
+
+To put this another way, the estimates from FDID are basically half of the DID estimate. This is a colossal reduction of effect. Also of interest is that FDID selects 4 control states which, barring Utah, happen to be the exact same states as the original synthetic control method selected, on top of not needing to use retail price of cigarettes, age, income, taxation, and outcome lags to attain what is essentially the same results of other synthetic control methods ([which tend to vary](https://rpubs.com/dwrich27/941298) between -13 and -19, depending on which flavor of SCM we use). Of course, this assumes that a uniformly weighted average is the ideal way to model the counterfactual, but the point here is that we can get very similar results to the findings of the original model using a relatively simpler estimator which also happens to be qualitatively similar. An added benefit of DID is that inference is more straightforward too.
 
 # Staggered Adoption
 
