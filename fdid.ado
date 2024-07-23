@@ -656,36 +656,34 @@ order `U', a(`treated_unit')
 
 tempvar ymean rss tss
 
-	egen ymeandid = rowmean(`U')
+egen ymeandid = rowmean(`U')
 
 
-	constraint define 1 ymeandid = 1
+constraint define 1 ymeandid = 1
 
 
-	qui cnsreg `treated_unit' ymeandid if `time' < `interdate', constraints(1)
+qui cnsreg `treated_unit' ymeandid if `time' < `interdate', constraints(1)
 
-	qui predict cfdd
-	
-	
-	
-	* Calculate the mean of observed values
-	qui summarize `treated_unit' if `time' < `interdate'
-	local mean_observed = r(mean)
+qui predict cfdd
 
-	* Calculate the Total Sum of Squares (TSS)
-	qui generate double `tss' = (`treated_unit' - `mean_observed')^2 if `time' < `interdate'
-	qui summarize `tss' if `time' < `interdate'
-	local TSS = r(sum)
+* Calculate the mean of observed values
+qui summarize `treated_unit' if `time' < `interdate'
+local mean_observed = r(mean)
 
-	* Calculate the Residual Sum of Squares (RSS)
-	qui generate double `rss' = (`treated_unit' - cfdd)^2 if `time' < `interdate'
-	qui summarize `rss' if `time' < `interdate'
-	local RSS = r(sum)
+* Calculate the Total Sum of Squares (TSS)
+qui generate double `tss' = (`treated_unit' - `mean_observed')^2 if `time' < `interdate'
+qui summarize `tss' if `time' < `interdate'
+local TSS = r(sum)
 
-	* Calculate and display R-squared
-	loc r2dd = 1 - (`RSS' / `TSS')
-	
-	scalar DDr2 = `r2dd'
+* Calculate the Residual Sum of Squares (RSS)
+qui generate double `rss' = (`treated_unit' - cfdd)^2 if `time' < `interdate'
+qui summarize `rss' if `time' < `interdate'
+local RSS = r(sum)
+
+* Calculate and display R-squared
+loc r2dd = 1 - (`RSS' / `TSS')
+
+scalar DDr2 = `r2dd'
 	
 
 * Initialize an empty local to build the variable list
