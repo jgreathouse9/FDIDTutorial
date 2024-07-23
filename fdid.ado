@@ -692,7 +692,6 @@ local varlist
 local best_r2 = -1
 local best_model = ""
 
-
 * Loop through each variable in the list
 
 qui foreach x of loc U {
@@ -741,13 +740,13 @@ qui foreach x of loc U {
 } // end of Forward Selection
 di as text ""
 
-qui drop ymean cf tss rss
-
+//qui drop cf tss rss
+ds
 cwf `cfframe'
 
 qui frlink 1:1 `time', frame(`__reshape')
 
-qui frget `treated_unit' `best_model' cfdd ymeandid, from(`__reshape')
+qui frget `treated_unit' `best_model'  cfdd ymeandid, from(`__reshape') //
 
 //di as txt "{hline}"
 
