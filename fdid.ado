@@ -823,8 +823,10 @@ local fitname = "fit" + "`treatst'"
 
 local fitname_cleaned = subinstr("`fitname'", " ", "", .)
 
+loc fitname_cleaned: di ustrregexra("`fitname_cleaned'", "[?@#!{}%()]", "")
+
+
 loc grname name(`fitname_cleaned', replace)	
-	
 	
 }
 
@@ -956,6 +958,9 @@ if _rc != 0 {
 local fitname = "te_" + "`treatst'"
 
 local fitname_cleaned = subinstr("`fitname'", " ", "", .)
+
+loc fitname_cleaned: di ustrregexra("`fitname_cleaned'", "[?@#!{}%()]", "")
+
 
 loc grname name(`fitname_cleaned', replace)	
 }
