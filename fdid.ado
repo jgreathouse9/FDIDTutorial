@@ -27,7 +27,6 @@ set more off
 
 prog define fdid, eclass
 
-cap frame drop __reshape
 qui frame 
 loc originalframe: di r(currentframe)
 
@@ -85,19 +84,18 @@ _xtstrbal `panel' `time' `touse'
 		[gr1opts(string asis)] [gr2opts(string asis)] ///
 		[unitnames(varlist max=1 string)]
 		
-
 		
    /* if unitname specified, grab the label here */
 if "`unitnames'" != "" {
-	
+	qui frame 
 	local curframe = c(frame)
 	
-
+tempname __dfcopy
 cap frame drop __dfcopy
 
-frame copy `curframe' __dfcopy
+frame copy `curframe' `__dfcopy'
 
-	cwf __dfcopy
+	cwf `__dfcopy'
 	
     
 	qui levelsof `panel',local(levp)
@@ -174,18 +172,16 @@ if `nwords' > 1 {
 }
 
 
-
 foreach x of loc trunit {
-	
+
 local curframe = c(frame)
 
-cap frame drop __dfcopy
+if "`curframe'" != "`__dfcopy'" {
 
-if "`curframe'" != "__dfcopy" {
-
-frame copy `curframe' __dfcopy
+tempname __dfcopy
+frame copy `curframe' `__dfcopy'
 }
-frame __dfcopy {
+frame `__dfcopy' {
 
 
 loc trunitstr: display "`: label (`panel') `x''"
@@ -243,7 +239,7 @@ est_dd, time(`time') ///
 	panel(`panel') ///
 	outcome(`depvar') ///
 	trnum(`x') treatment(`treated') ///
-	cfframe(`defname') ntr(`nwords')
+	cfframe(`defname') ntr(`nwords') copyname(`__dfcopy')
 	
         if `nwords' > 1 {
             matrix resmat = e(results)
@@ -326,7 +322,6 @@ ereturn mat results= `my_matrix'
 cwf `originalframe'
 qui cap frame drop fdidmatrixres
 cap frame drop `defname'
-qui frame drop __dfcopy
 end
 
 /**********************************************************
@@ -483,7 +478,7 @@ syntax, ///
 	outcome(string asis) ///
 	trnum(numlist min=1 max=1 >=1 int) ///
 	treatment(string) [outlab(string asis)] ///
-	cfframe(string) ntr(numlist min=1 max=1 >=1 int)
+	cfframe(string) ntr(numlist min=1 max=1 >=1 int) copyname(string asis)
 
 	
 local curframe = c(frame)
@@ -706,7 +701,7 @@ local TSS = r(sum)
 
 
 qui foreach x of loc U {
-	
+tempname cfiter	
 	* Drop previous variables
 	
 	cap drop cfiter
@@ -724,10 +719,10 @@ qui foreach x of loc U {
 
 	qui cnsreg `treated_unit' ymeaniter if `time' < `interdate', constraints(1)
 
-	qui predict cfiter if e(sample)
+	qui predict `cfiter' if e(sample)
 
 	* Calculate the Residual Sum of Squares (RSS)
-	qui generate double `rss' = (`treated_unit' - cfiter)^2
+	qui generate double `rss' = (`treated_unit' - `cfiter')^2
 	qui summarize `rss'
 	local RSS = r(sum)
 
@@ -741,8 +736,6 @@ qui foreach x of loc U {
 	}
 } // end of Forward Selection
 di as text ""
-
-qui drop cfiter
 
 cwf `cfframe'
 
@@ -765,16 +758,6 @@ qui cnsreg `treated_unit' ymeanfdid if `time' < `interdate', constraints(1)
 loc RMSE = e(rmse)
 
 qui predict cf
-//qui predict se, stdp
-
-* Calculate the mean of observed values
-qui summarize `treated_unit' if `time' < `interdate'
-local mean_observed = r(mean)
-
-* Calculate the Total Sum of Squares (TSS)
-qui generate double tss = (`treated_unit' - `mean_observed')^2 if `time' < `interdate'
-qui summarize tss
-local TSS = r(sum)
 
 * Calculate the Residual Sum of Squares (RSS)
 qui generate double rss = (`treated_unit' - cf)^2 if `time' < `interdate'
@@ -831,8 +814,8 @@ loc grname name(`fitname_cleaned', replace)
 }
 
 twoway (line `treated_unit' `time', lcol(black) lwidth(medthick) lpat(solid)) ///
-(line cf `time', lpat(dash) lwidth(thin) lcol(gs10)) ///
-(line cfdd `time', lpat(shortdash) lwidth(medthick) lcol(gs6)), ///
+(line cf `time', lpat(longdash) lwidth(thin) lcol(black)) ///
+(line cfdd `time', lpat(shortdash) lwidth(medthick) lcol(gs8)), ///
 yti("`treatst' `outlab'") ///
 legend(order(1 "Observed" 2 "FDID" 3 "DD")) ///
 xli(`interdate', lcol(gs6) lpat(--)) `grname' `gr1opts'
@@ -844,7 +827,7 @@ xli(`interdate', lcol(gs6) lpat(--)) `grname' `gr1opts'
 lab var cf "FDID `treatst'"
 lab var `treated_unit'"Observed `treatst'"
 
-frame __dfcopy {
+frame `copyname' {
 
 local n = ustrregexra("`best_model'","\D"," ")
 
@@ -895,9 +878,9 @@ lab var te "Pointwise Treatment Effect"
 lab var ddte "Pointwise DD Treatment Effect"
 
 qui g eventtime = `time'-`interdate'
+tempvar residsq
 
-
-qui g residsq = te^2 if eventtime <0
+qui g `residsq' = te^2 if eventtime <0
 
 qui su if eventtime <0
 scalar t1 = r(N)
@@ -905,11 +888,11 @@ scalar t1 = r(N)
 qui su eventtime if eventtime>=0
 scalar t2 = r(N)
 
-qui su residsq, mean
+qui su `residsq', mean
 scalar o1hat=(scalar(t2) / scalar(t1))*(r(mean))
 
 
-qui su residsq, mean
+qui su `residsq', mean
 scalar o2hat = (r(mean))
 
 scalar ohat = sqrt(scalar(o1hat) + scalar(o2hat))
@@ -1001,35 +984,35 @@ ereturn scalar T= `t1'+`t2'
 
 * Assuming you want to round to 3 decimal places for most values and 2 for others
 * Round the scalar r2 to 3 decimal places
-ereturn scalar r2 = round(scalar(r2), 0.001)
+ereturn scalar r2 = round(scalar(r2), 0.0001)
 
 * Round the scalar DDr2 to 3 decimal places
-ereturn scalar DDr2 = round(scalar(DDr2), 0.001)
+ereturn scalar DDr2 = round(scalar(DDr2), 0.0001)
 
 * Round the scalar rmse to 3 decimal places
-ereturn scalar rmse = round(`RMSE', 0.001)
+ereturn scalar rmse = round(`RMSE', 0.0001)
 
 * Assign the local N0U to the count of words in best_model and round if needed
 local N0U: word count `best_model'
 ereturn scalar N0U = `N0U'  // No rounding needed as this is a count
 
 * Round the scalar DDATT to 3 decimal places
-ereturn scalar DDATT = round(scalar(DDATT), 0.001)
+ereturn scalar DDATT = round(scalar(DDATT), 0.0001)
 
 * Round the scalar pDDATT to 3 decimal places
-ereturn scalar pDDATT = round(scalar(pATTDD), 0.001)
+ereturn scalar pDDATT = round(scalar(pATTDD), 0.0001)
 
 * Round the scalar pATT to 3 decimal places
-ereturn scalar pATT = round(scalar(pATT), 0.001)
+ereturn scalar pATT = round(scalar(pATT), 0.0001)
 
 * Round the scalar CILB to 3 decimal places
-ereturn scalar CILB = round(scalar(CILB), 0.001)
+ereturn scalar CILB = round(scalar(CILB), 0.0001)
 
 * Round the scalar ATT to 3 decimal places
-ereturn scalar ATT = round(scalar(ATT), 0.001)
+ereturn scalar ATT = round(scalar(ATT), 0.0001)
 
 * Round the scalar CIUB to 3 decimal places
-ereturn scalar CIUB = round(scalar(CIUB), 0.001)
+ereturn scalar CIUB = round(scalar(CIUB), 0.0001)
 
 * Round the scalar se to 3 decimal places
 ereturn scalar se = round(scalar(SE), 0.0001)
@@ -1043,9 +1026,6 @@ scalar p_value = 2 * (1 - normal(scalar(tstat)))
 local tabletitle "Forward Difference-in-Differences"
 
 if `ntr' == 1 {
-
-di as text ""
-
 
 di as res "`tabletitle'" "          " "T0 R2: " %9.3f scalar(r2) "     T0 RMSE: " %9.3f `RMSE'
 di as text ""
