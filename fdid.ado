@@ -695,39 +695,40 @@ local best_model = ""
 
 * Loop through each variable in the list
 
+* Calculate the mean of observed values
+qui summarize `treated_unit'
+local mean_observed = r(mean)
+tempvar tss
+* Calculate the Total Sum of Squares (TSS)
+qui generate double `tss' = (`treated_unit' - `mean_observed')^2
+qui summarize `tss'
+local TSS = r(sum)
+
+
 qui foreach x of loc U {
 	
 	* Drop previous variables
-	cap drop cf 
-	cap drop ymean 
-	cap drop tss
-	cap drop rss
+	
+	cap drop cfiter
+	cap drop ymeaniter 
+	tempvar rss
 	* Add the current variable to the list
 	local varlist `varlist' `x'
 
 
-	egen ymean = rowmean(`varlist')
+	egen ymeaniter = rowmean(`varlist')
 
 
-	constraint define 1 ymean = 1
+	constraint define 1 ymeaniter = 1
 
 
-	qui cnsreg `treated_unit' ymean if `time' < `interdate', constraints(1)
+	qui cnsreg `treated_unit' ymeaniter if `time' < `interdate', constraints(1)
 
-	qui predict cf if e(sample)
-
-	* Calculate the mean of observed values
-	qui summarize `treated_unit'
-	local mean_observed = r(mean)
-
-	* Calculate the Total Sum of Squares (TSS)
-	qui generate double tss = (`treated_unit' - `mean_observed')^2
-	qui summarize tss
-	local TSS = r(sum)
+	qui predict cfiter if e(sample)
 
 	* Calculate the Residual Sum of Squares (RSS)
-	qui generate double rss = (`treated_unit' - cf)^2
-	qui summarize rss
+	qui generate double `rss' = (`treated_unit' - cfiter)^2
+	qui summarize `rss'
 	local RSS = r(sum)
 
 	* Calculate and display R-squared
@@ -741,8 +742,8 @@ qui foreach x of loc U {
 } // end of Forward Selection
 di as text ""
 
-//qui drop cf tss rss
-
+qui drop cfiter
+ds
 cwf `cfframe'
 
 qui frlink 1:1 `time', frame(`__reshape')
