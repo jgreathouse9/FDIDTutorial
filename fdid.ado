@@ -934,12 +934,35 @@ scalar pATTDD =  100*scalar(DDATT)/r(mean)
 
 
 if ("`gr2opts'" ~= "") {
+	
+
+// Define the string
+local myString "`gr2opts'"
+
+// Check if the word "name" is in the string
+local contains_name = strpos("`myString'", "name")
+
+// Return 1 if the string contains the word "name", otherwise return 0
+local namecont = cond(`contains_name' > 0, 1, 0)
+
+	
+cap as `namecont'==1
+
+if _rc != 0 {
+
+
+local fitname = "te_" + "`treatst'"
+
+local fitname_cleaned = subinstr("`fitname'", " ", "", .)
+
+loc grname name(`fitname_cleaned', replace)	
+}
 
 	
 
 twoway (connected te eventtime, connect(direct) msymbol(smdiamond)), ///
 yti("Pointwise Treatment Effect") ///
-yli(0, lpat(-)) xli(0, lwidth(vthin)) name(gap`treatst', replace) `gr2opts'
+yli(0, lpat(-)) xli(0, lwidth(vthin)) `grname' `gr2opts'
 }
 
 
