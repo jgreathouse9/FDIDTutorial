@@ -743,7 +743,7 @@ qui foreach x of loc U {
 di as text ""
 
 qui drop cfiter
-ds
+
 cwf `cfframe'
 
 qui frlink 1:1 `time', frame(`__reshape')
