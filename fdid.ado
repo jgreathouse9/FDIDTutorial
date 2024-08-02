@@ -1023,6 +1023,9 @@ local tabletitle "Forward Difference-in-Differences"
 
 if `ntr' == 1 {
 
+di ""
+di ""
+
 di as res "`tabletitle'" "    " "T0 R2: " %9.3f scalar(r2) "     T0 RMSE: " %9.3f `RMSE' 
 di as text "{hline 13}{c TT}{hline 63}"
 di as text %12s abbrev("`outcome'",12) " {c |}     ATT     Std. Err.     t      P>|t|    [95% Conf. Interval]" 
