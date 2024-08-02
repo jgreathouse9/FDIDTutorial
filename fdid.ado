@@ -298,7 +298,6 @@ scalar CI_upper = scalar(ATT_combined) + (invnormal(0.975) * scalar(SE_combined)
     scalar p_value = 2 * (1 - normal(abs(scalar(tstat))))
 
 * Clear any previous display
-di as text ""
 di as res "`tabletitle'"
 di as text ""
 di as text "{hline 13}{c TT}{hline 75}"
