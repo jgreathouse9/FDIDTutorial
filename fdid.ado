@@ -734,7 +734,6 @@ tempname cfiter
 		local best_model = "`varlist'"
 	}
 } // end of Forward Selection
-di as text ""
 
 cwf `cfframe'
 
