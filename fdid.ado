@@ -764,7 +764,7 @@ qui sum ss_res
 scalar SS_res = r(sum)
 
 * Calculate SS_tot
-qui sum `treated_unit' if `time' < 45
+qui sum `treated_unit' if `time' < `interdate'
 scalar meantr = r(mean) 
 qui gen ss_tot = (`treated_unit' - meantr)^2 if `time' < `interdate'
 qui sum ss_tot if `time' < `interdate'
