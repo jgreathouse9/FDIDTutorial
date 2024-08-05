@@ -1,4 +1,4 @@
-*!version 1.0.0  02Aug2024
+*!version 1.0.0  05Aug2024
 *****************************************************
 set more off
 
@@ -755,13 +755,23 @@ loc RMSE = e(rmse)
 
 qui predict cf
 
-* Calculate the Residual Sum of Squares (RSS)
-qui generate double rss = (`treated_unit' - cf)^2 if `time' < `interdate'
-qui summarize rss
-local RSS = r(sum)
+* Generate residuals
+qui gen residual = `treated_unit' - cf if `time' < `interdate'
 
-* Calculate and display R-squared
-scalar r2 = 1 - (`RSS' / `TSS')
+* Calculate SS_res
+qui gen ss_res = residual^2 if `time' < `interdate'
+qui sum ss_res
+scalar SS_res = r(sum)
+
+* Calculate SS_tot
+qui sum `treated_unit' if `time' < 45
+scalar meantr = r(mean) 
+qui gen ss_tot = (`treated_unit' - meantr)^2 if `time' < `interdate'
+qui sum ss_tot if `time' < `interdate'
+scalar SS_tot = r(sum)
+
+* Calculate R2 manually
+scalar r2 = 1 - SS_res / SS_tot
 
 // Now we calculate our ATT
 
