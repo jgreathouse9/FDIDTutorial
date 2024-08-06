@@ -315,7 +315,7 @@ matrix rownames `my_matrix' = Result
 ereturn clear
 
 matrix b=scalar(ATT_combined)
-matrix V=scalar(SE_combined)^2
+matrix V=scalar(SE_combined)
 matrix colnames b=`treated'
 matrix rownames b=`depvar'
 matrix colnames V=`treated'
