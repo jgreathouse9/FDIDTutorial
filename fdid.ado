@@ -306,6 +306,7 @@ di as text "{hline 13}{c BT}{hline 63}"
 di as text "See Li (2024) for technical details."
 di as text "Effects are calculated in event-time using never-treated units."
 
+
 tempname my_matrix
 matrix `my_matrix' = (scalar(ATT_combined), scalar(PATT_combined), scalar(SE_combined), scalar(tstat), scalar(CI_lower), scalar(CI_upper))
 matrix colnames `my_matrix' = ATT PATT SE t LB UB
@@ -314,7 +315,7 @@ matrix rownames `my_matrix' = Result
 ereturn clear
 
 matrix b=scalar(ATT_combined)
-matrix V=scalar(SE_combined)
+matrix V=scalar(SE_combined)^2
 matrix colnames b=`treated'
 matrix rownames b=`depvar'
 matrix colnames V=`treated'
@@ -985,12 +986,15 @@ matrix colnames `my_matrix' = ATT PATT SE t LB UB R2 RMSE
 ereturn clear
 
 matrix b=scalar(ATT)
-matrix V=scalar(ohat)
+matrix V=scalar(SE)^2
 matrix colnames b=`treatment'
 matrix rownames b=`outcome'
 matrix colnames V=`treatment'
 matrix rownames V=`treatment'
+
 ereturn post b V, depname(`outcome')
+
+
 
 matrix rownames `my_matrix' = Statistics
 
