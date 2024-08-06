@@ -313,6 +313,15 @@ matrix colnames `my_matrix' = ATT PATT SE t LB UB
 
 matrix rownames `my_matrix' = Result
 ereturn clear
+
+matrix b=scalar(ATT_combined)
+matrix V=scalar(SE_combined)^2
+matrix colnames b=`treated'
+matrix rownames b=`depvar'
+matrix colnames V=`treated'
+matrix rownames V=`treated'
+ereturn post b V, depname(`depvar')
+
 ereturn mat results= `my_matrix'
 
 }
@@ -725,6 +734,7 @@ tempname cfiter
 
 	* Calculate and display R-squared
 	loc r2 = 1 - (`RSS' / `TSS')
+
     
 	* Check if the current R-squared is the highest
 	if (`r2' > `best_r2') {
@@ -974,6 +984,15 @@ tempname my_matrix
 matrix `my_matrix' = (scalar(ATT), scalar(pATT), scalar(SE), scalar(tstat), scalar(CILB), scalar(CIUB), scalar(r2), `rmseround')
 matrix colnames `my_matrix' = ATT PATT SE t LB UB R2 RMSE
 ereturn clear
+
+matrix b=scalar(ATT)
+matrix V=scalar(ohat)
+matrix colnames b=`treatment'
+matrix rownames b=`outcome'
+matrix colnames V=`treatment'
+matrix rownames V=`treatment'
+ereturn post b V, depname(`outcome')
+
 matrix rownames `my_matrix' = Statistics
 
 ereturn loc U "`controls'"
@@ -1029,14 +1048,14 @@ ereturn scalar tstat = round(scalar(tstat), 0.01)
 
 scalar p_value = 2 * (1 - normal(scalar(tstat)))
 
-local tabletitle "Forward Difference-in-Differences"
+local tabletitle "Forward Difference-in-Differences   "
 
 if `ntr' == 1 {
 
 di ""
 di ""
 
-di as res "`tabletitle'" "    " "T0 R2: " %9.3f scalar(r2) "     T0 RMSE: " %9.3f `RMSE' 
+di as res "`tabletitle'{c |}   "      " " "T0 R2: " %5.3f scalar(r2) "  T0 RMSE: " %5.3f `RMSE'
 di as text "{hline 13}{c TT}{hline 63}"
 di as text %12s abbrev("`outcome'",12) " {c |}     ATT     Std. Err.     t      P>|t|    [95% Conf. Interval]" 
 di as text "{hline 13}{c +}{hline 63}"
