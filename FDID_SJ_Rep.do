@@ -14,7 +14,7 @@ qui u smoking, clear
 cls
 fdid cigsale, tr(treated) unitnames(state)
 
-esttab, se
+//esttab, se
 
 
 
@@ -37,16 +37,14 @@ twoway (tsline cigsale3) ///
 (tsline cfdd, lcolor(black) lwidth(thick) lpattern(dash)) ///
 (tsline ymeandid, lcolor(black) lwidth(thick) lpattern(solid)), ///
 scheme(sj) name(did, replace) ///
-yti(Cigarette Consumption per Capita) tli(1989) legend(ring(0) pos(7) col(1)) ///
+yti(Cigarette Consumption per Capita) tli(1989) legend(ring(0) pos(7) col(1) size(large)) ///
 ti(Uses all controls)
 
 twoway (tsline cigsale3) ///
 (tsline cf,lcolor(gs6) lwidth(thick) lpattern(longdash)) ///
 (tsline ymeanfdid, lcolor(gs6) lwidth(thick) lpattern(solid)), ///
-scheme(sj) name(fdid, replace) tli(1989) legend(ring(0) pos(7) col(1)) ///
+scheme(sj) name(fdid, replace) tli(1989) legend(ring(0) pos(7) col(1) size(large)) ///
 ti(Uses 4 controls)
-
-
 
 
 graph combine did fdid, xsize(8)
@@ -58,6 +56,6 @@ cwf edr
 u turnout, clear
 
 fdid turnout, tr(policy_edr) unitnames(abb)
-esttab, se
+//esttab, se
 qui log close
 
