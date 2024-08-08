@@ -1004,7 +1004,7 @@ ereturn mat results = `my_matrix'
 ereturn mat series = series
 
 ereturn scalar T1 = `t1'
-ereturn scalar T0= `t1'+1
+ereturn scalar T0= `interdate'
 ereturn scalar T2 = `t2'
 
 ereturn scalar T= `t1'+`t2'
