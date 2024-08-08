@@ -12,11 +12,15 @@ net get fdid, replace
 
 qui u smoking, clear
 cls
+
+// First Example: Prop 99
+
+
 fdid cigsale, tr(treated) unitnames(state)
 
 //esttab, se
 
-
+// Making the First Plot
 
 mkf resultframe
 cwf resultframe
@@ -49,6 +53,15 @@ ti(Uses 4 controls)
 
 graph combine did fdid, xsize(8)
 graph export "FDIDP99.png", as(png) name("Graph") replace
+
+/*
+u hcw, clear
+cls
+fdid gdp, tr(treat) unitnames(state)
+*/
+
+
+// Election Day Registration
 
 mkf edr
 cwf edr
