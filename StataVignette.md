@@ -51,31 +51,35 @@ If we wish to see the returned results, we can do
 ereturn list
 
 
+
 scalars:
                  e(T1) =  44
                  e(T0) =  45
                  e(T2) =  17
                   e(T) =  61
-                 e(r2) =  .843
-               e(DDr2) =  .505
-               e(rmse) =  .016
+                 e(r2) =  .8428
+               e(DDr2) =  .5046
+               e(rmse) =  .0164
                 e(N0U) =  9
-              e(DDATT) =  .032
-             e(pDDATT) =  77.62
-               e(pATT) =  53.843
-               e(CILB) =  .016
-                e(ATT) =  .025
-               e(CIUB) =  .034
+              e(DDATT) =  .0317
+             e(pDDATT) =  77.6203
+               e(pATT) =  53.8431
+               e(CILB) =  .0163
+                e(ATT) =  .0254
+               e(CIUB) =  .0345
                  e(se) =  .0046
               e(tstat) =  5.49
 
 macros:
                   e(U) : "philippines, singapore, thailand, norway, mexico, korea, indonesia, newzealand, malaysia,"
+         e(properties) : "b V"
+             e(depvar) : "gdp"
 
 matrices:
-             e(series) :  61 x 7
+                  e(b) :  1 x 1
+                  e(V) :  1 x 1
+             e(series) :  61 x 9
             e(results) :  1 x 8
-
 
 ```
 The ```e(series)``` is a matrix containing the observed and counterfactual values, event time, individual treatment effects. Naturally, the other statistics pertain to the total number of controls, the number of controls selected, as well as inferential statistics. Note that the fact we have a sparse control group selected (i.e., we didn't select 20 controls) demonstrates the effectiveness of choosing a much smaller subset of controls
