@@ -134,7 +134,7 @@ Note that each string value pair must be uniquely identified.
 {synoptset 20 tabbed}{...}
 {p2col 5 20 24 2: Matrices}{p_end}
 {synopt:{cmd:e(series)}}A matrix containing the time, observed values, counterfactual values, pointwise treatment effect, event time, and means for the all controls and FDID controls.{p_end}
-{synopt:{cmd:e(results)}}Table of results (ATT, SE, t, CI, pvalue){p_end}
+{synopt:{cmd:e(results)}}Table of results (ATT, PATT, SE, t, LB, UB, R2, RMSE){p_end}
 {synopt:{cmd:e(b)}}Coefficients.{p_end}
 {synopt:{cmd:e(V)}}Covariance matrix.{p_end}
 
