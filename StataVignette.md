@@ -89,9 +89,11 @@ The results themselves can also be conveniently accessed like
 
 mat l e(results)
 
-r(results)[1,7]
-                  ATT         SE          t         LB         UB         R2       RMSE
-Statistics  .02540494  .00462405  5.4940862  .01634196  .03446791   .8427835     .01638
+
+e(results)[1,8]
+                  ATT       PATT         SE          t         LB         UB         R2       RMSE
+Statistics  .02540494  53.843074  .00462405  5.4940862  .01634196  .03446791   .8427835     .01638
+
 ```
 
 # Proposition 99
