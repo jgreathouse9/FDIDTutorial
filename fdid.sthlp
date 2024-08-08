@@ -140,7 +140,7 @@ Note that each string value pair must be uniquely identified.
 
 {synoptset 20 tabbed}{...}
 {p2col 5 20 24 2: Frames}{p_end}
-{synopt:{cmd:fdidcfframe}}cmd:e(series) for each treated unit (staggered adoption only) {p_end}
+{synopt:{cmd:fdidcfframe}}frame for each treated unit (staggered adoption only) {p_end}
 
 {marker examples}{...}
 {title:Examples}
