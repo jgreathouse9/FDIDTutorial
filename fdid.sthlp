@@ -127,13 +127,20 @@ Note that each string value pair must be uniquely identified.
 
 {synoptset 20 tabbed}{...}
 {p2col 5 20 24 2: Macros}{p_end}
-{synopt:{cmd:e(U)}}list of selected controls selected by FDID method.{p_end}
+{synopt:{cmd:e(U)}}list of selected controls selected by FDID method (singe treated unit only).{p_end}
+{synopt:{cmd:e(depvar)}}dependent variable.{p_end}
+{synopt:{cmd:e(properties)}}list of properties.{p_end}
 
 {synoptset 20 tabbed}{...}
 {p2col 5 20 24 2: Matrices}{p_end}
 {synopt:{cmd:e(series)}}A matrix containing the time, observed values, counterfactual values, pointwise treatment effect, event time, and means for the all controls and FDID controls.{p_end}
 {synopt:{cmd:e(results)}}Table of results (ATT, SE, t, CI, pvalue){p_end}
+{synopt:{cmd:e(b)}}Coefficients.{p_end}
+{synopt:{cmd:e(V)}}Covariance matrix.{p_end}
 
+{synoptset 20 tabbed}{...}
+{p2col 5 20 24 2: Frames}{p_end}
+{synopt:{cmd:fdidcfframe}}cmd:e(series) for each treated unit (staggered adoption only) {p_end}
 
 {marker examples}{...}
 {title:Examples}
