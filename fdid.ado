@@ -324,9 +324,52 @@ ereturn post b V, depname(`depvar')
 
 ereturn mat results= `my_matrix'
 
-}
 cwf `originalframe'
 qui cap frame drop fdidmatrixres
+
+* Create a new macro to store the filtered elements
+local new_color
+
+qui frame dir
+
+loc color `r(frames)'
+
+* Loop through each element in the `color` macro and check if it contains "blue"
+foreach col of local color {
+    if strpos("`col'", "fdid_cfframe") {
+        local new_color `new_color' `col'
+    }
+}
+
+loc nmulti: word count `new_color'
+
+loc firstframe: word 1 of `new_color'
+
+cwf `firstframe'
+
+forv i = 2/`nmulti' {
+
+loc change: word `i' of `new_color'
+qui frlink 1:1 `time', frame(`change')
+
+qui frget *, from(`change')
+frame drop `change'
+}
+
+frame put *, into(wideframe)
+
+frame put *, into(longframe)
+
+qui frame longframe {
+qui reshape long `depvar' cf te eventtime cfdd ymeandid ymeanfdid ddte, i(`time') j(`panel')
+sort `panel' `time'
+
+
+}
+cwf longframe
+frame drop `firstframe'
+}
+cwf `originalframe'
 //cap frame drop `defname'
 end
 
@@ -971,6 +1014,7 @@ yti("Pointwise Treatment Effect") ///
 yli(0, lpat(-)) xli(0, lwidth(vthin)) `grname' `gr2opts'
 }
 
+qui rename (ymeandid ymeanfdid) (ymeandid`trnum' ymeanfdid`trnum')
 
 loc rmseround: di %9.5f `RMSE'
 qui keep eventtime`trnum' `time' `treated_unit' cf`trnum' cfdd`trnum' te`trnum' ddte`trnum' ymeanfdid ymeandid
