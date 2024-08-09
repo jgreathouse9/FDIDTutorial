@@ -327,7 +327,7 @@ ereturn mat results= `my_matrix'
 }
 cwf `originalframe'
 qui cap frame drop fdidmatrixres
-cap frame drop `defname'
+//cap frame drop `defname'
 end
 
 /**********************************************************
@@ -666,7 +666,7 @@ constraint define 1 ymeandid = 1
 
 qui cnsreg `treated_unit' ymeandid if `time' < `interdate', constraints(1)
 
-qui predict cfdd
+qui predict cfdd`trnum'
 
 * Calculate the mean of observed values
 qui summarize `treated_unit' if `time' < `interdate'
@@ -678,7 +678,7 @@ qui summarize `tss' if `time' < `interdate'
 local TSS = r(sum)
 
 * Calculate the Residual Sum of Squares (RSS)
-qui generate double `rss' = (`treated_unit' - cfdd)^2 if `time' < `interdate'
+qui generate double `rss' = (`treated_unit' - cfdd`trnum')^2 if `time' < `interdate'
 qui summarize `rss' if `time' < `interdate'
 local RSS = r(sum)
 
@@ -747,7 +747,7 @@ cwf `cfframe'
 
 qui frlink 1:1 `time', frame(`__reshape')
 
-qui frget `treated_unit' `best_model'  cfdd ymeandid, from(`__reshape') //
+qui frget `treated_unit' `best_model'  cfdd`trnum' ymeandid, from(`__reshape') //
 
 //di as txt "{hline}"
 
@@ -763,10 +763,10 @@ constraint define 1 ymeanfdid = 1
 qui cnsreg `treated_unit' ymeanfdid if `time' < `interdate', constraints(1)
 loc RMSE = e(rmse)
 
-qui predict cf
+qui predict cf`trnum'
 
 * Generate residuals
-qui gen residual = `treated_unit' - cf if `time' < `interdate'
+qui gen residual = `treated_unit' - cf`trnum' if `time' < `interdate'
 
 * Calculate SS_res
 qui gen ss_res = residual^2 if `time' < `interdate'
@@ -830,8 +830,8 @@ loc grname name(`fitname_cleaned', replace)
 }
 
 twoway (line `treated_unit' `time', lcol(black) lwidth(medthick) lpat(solid)) ///
-(line cf `time', lpat(longdash) lwidth(thin) lcol(black)) ///
-(line cfdd `time', lpat(shortdash) lwidth(medthick) lcol(gs8)), ///
+(line cf`trnum' `time', lpat(longdash) lwidth(thin) lcol(black)) ///
+(line cfdd`trnum' `time', lpat(shortdash) lwidth(medthick) lcol(gs8)), ///
 yti("`treatst' `outlab'") ///
 legend(order(1 "Observed" 2 "FDID" 3 "DD")) ///
 xli(`interdate', lcol(gs6) lpat(--)) `grname' `gr1opts'
@@ -840,7 +840,7 @@ xli(`interdate', lcol(gs6) lpat(--)) `grname' `gr1opts'
 
 
 
-lab var cf "FDID `treatst'"
+lab var cf`trnum' "FDID `treatst'"
 lab var `treated_unit'"Observed `treatst'"
 
 frame `copyname' {
@@ -886,22 +886,22 @@ tempname t1
 scalar `t1' = r(N)
 
 
-g te = `treated_unit' - cf
+g te`trnum' = `treated_unit' - cf`trnum'
 
-g ddte =`treated_unit'-cfdd
+g ddte`trnum' =`treated_unit'-cfdd`trnum'
 
-lab var te "Pointwise Treatment Effect"
-lab var ddte "Pointwise DD Treatment Effect"
+lab var te`trnum' "Pointwise Treatment Effect"
+lab var ddte`trnum' "Pointwise DD Treatment Effect"
 
-qui g eventtime = `time'-`interdate'
+qui g eventtime`trnum' = `time'-`interdate'
 tempvar residsq
 
-qui g `residsq' = te^2 if eventtime <0
+qui g `residsq' = te`trnum'^2 if eventtime`trnum' <0
 
-qui su if eventtime <0
+qui su if eventtime`trnum' <0
 scalar t1 = r(N)
 
-qui su eventtime if eventtime>=0
+qui su eventtime`trnum' if eventtime`trnum' >=0
 scalar t2 = r(N)
 
 qui su `residsq', mean
@@ -918,7 +918,7 @@ qui su te if `time' >= `interdate'
 
 scalar ATT = r(mean)
 
-qui su cf if eventtime >=0 
+qui su cf`trnum' if eventtime`trnum' >=0 
 
 scalar pATT =  100*scalar(ATT)/r(mean)
 
@@ -927,11 +927,11 @@ scalar CILB = scalar(ATT) - (((invnormal(0.975) * scalar(ohat)))/sqrt(scalar(t2)
 
 scalar CIUB =  scalar(ATT) + (((invnormal(0.975) * scalar(ohat)))/sqrt(scalar(t2)))
 
-qui su ddte if eventtime >= 0, mean
+qui su ddte`trnum' if eventtime`trnum' >= 0, mean
 scalar DDATT = r(mean)
 
 
-qui su cfdd if eventtime >=0 
+qui su cfdd`trnum' if eventtime`trnum' >=0 
 
 scalar pATTDD =  100*scalar(DDATT)/r(mean)
 
@@ -966,14 +966,14 @@ loc grname name(`fitname_cleaned', replace)
 
 	
 
-twoway (connected te eventtime, connect(direct) msymbol(smdiamond)), ///
+twoway (connected te`trnum' eventtime`trnum', connect(direct) msymbol(smdiamond)), ///
 yti("Pointwise Treatment Effect") ///
 yli(0, lpat(-)) xli(0, lwidth(vthin)) `grname' `gr2opts'
 }
 
 
 loc rmseround: di %9.5f `RMSE'
-qui keep eventtime `time' `treated_unit' cf cfdd te ddte ymeanfdid ymeandid
+qui keep eventtime`trnum' `time' `treated_unit' cf`trnum' cfdd`trnum' te`trnum' ddte`trnum' ymeanfdid ymeandid
 
 qui mkmat *, mat(series)
 
