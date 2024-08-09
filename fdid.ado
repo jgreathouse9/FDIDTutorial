@@ -370,6 +370,9 @@ bys `panel': egen `cohort' = min(`time') if eventtime==0
 
 bys `panel': egen cohort = max(`cohort')
 qui drop fdid*
+qui xtset
+
+replace eventtime = eventtime / r(tdelta)
 
 }
 cwf longframe
