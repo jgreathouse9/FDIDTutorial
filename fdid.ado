@@ -364,6 +364,12 @@ qui frame longframe {
 qui reshape long `depvar' cf te eventtime cfdd ymeandid ymeanfdid ddte, i(`time') j(`panel')
 sort `panel' `time'
 
+tempname cohort
+
+bys `panel': egen `cohort' = min(`time') if eventtime==0
+
+bys `panel': egen cohort = max(`cohort')
+qui drop fdid*
 
 }
 cwf longframe
