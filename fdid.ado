@@ -360,19 +360,61 @@ frame put *, into(wideframe)
 
 frame put *, into(longframe)
 
-qui frame longframe {
+frame longframe {
 qui reshape long `depvar' cf te eventtime cfdd ymeandid ymeanfdid ddte, i(`time') j(`panel')
 sort `panel' `time'
 
 tempname cohort
 
-bys `panel': egen `cohort' = min(`time') if eventtime==0
+qbys `panel': egen `cohort' = min(`time') if eventtime==0
 
-bys `panel': egen cohort = max(`cohort')
+qbys `panel': egen cohort = max(`cohort')
 qui drop fdid*
+
 qui xtset
 
-replace eventtime = eventtime / r(tdelta)
+qui replace eventtime = eventtime / r(tdelta)
+
+qui g residsq = te^2 if eventtime < 0
+
+qbys cohort: egen ATT = mean(te) if event >=0 // Cohort ATT, tau_a
+
+
+qbys cohort: egen totpost = max(eventtime+1) // Total Post by Cohort T_post^a
+
+qbys cohort: egen totpre = max(abs(eventtime)) if eventtime < 0 // T_pre_a
+
+tempvar tag
+
+egen `tag' = tag(id)
+
+egen NCohort = total(`tag'), by(cohort) // Number of Units per Cohort
+
+// By Cohort, Mean of Residuals Squared
+
+qbys cohort: egen CohortMSE = mean(residsq) if event < 0 // Cohort Pre-Intervention MSE
+
+
+// Puts all of these into a frame
+
+frame put cohort ATT NCohort totpost totpre CohortMSE, into(EffectFrame)
+
+cwf EffectFrame
+
+collapse (firstnm) ATT NCohort totpost totpre CohortMSE, by(cohort)
+
+
+// Standard Error of the Cohort ATT
+
+bys cohort: g SECohort = sqrt((totpost/totpre)*CohortMSE)
+
+bys cohort: g LB = ATT - (invnormal(0.975) * SECohort)
+
+bys cohort: g UB = ATT + (invnormal(0.975) * SECohort)
+
+
+
+
 
 }
 cwf longframe
