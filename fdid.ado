@@ -377,12 +377,14 @@ qui replace eventtime = eventtime / r(tdelta)
 
 qui g residsq = te^2 if eventtime < 0
 
-qbys cohort: egen ATT = mean(te) if event >=0 // Cohort ATT, tau_a
-
-
 qbys cohort: egen totpost = max(eventtime+1) // Total Post by Cohort T_post^a
 
 qbys cohort: egen totpre = max(abs(eventtime)) if eventtime < 0 // T_pre_a
+
+egen max_totpost = max(totpost)
+
+
+qbys cohort: egen ATT = mean((totpost/max_totpost)*te) if event >=0 // Cohort ATT, tau_a
 
 tempvar tag
 
@@ -394,19 +396,22 @@ egen NCohort = total(`tag'), by(cohort) // Number of Units per Cohort
 
 qbys cohort: egen CohortMSE = mean(residsq) if event < 0 // Cohort Pre-Intervention MSE
 
-
 // Puts all of these into a frame
 
-frame put cohort ATT NCohort totpost totpre CohortMSE, into(EffectFrame)
+frame put cohort ATT NCohort totpost totpre CohortMSE max_totpost, into(EffectFrame)
 
 cwf EffectFrame
 
-collapse (firstnm) ATT NCohort totpost totpre CohortMSE, by(cohort)
+collapse (firstnm) ATT NCohort totpost totpre CohortMSE max_totpost, by(cohort)
 
 
 // Standard Error of the Cohort ATT
 
-bys cohort: g SECohort = sqrt((totpost/totpre)*CohortMSE)
+bys cohort: g SECohort = sqrt((totpost/max_totpost)*CohortMSE)
+
+bys cohort: g tstat = abs(ATT/SECohort)
+
+bys cohort: g p_value = 2 * (1 - normal(tstat))
 
 bys cohort: g LB = ATT - (invnormal(0.975) * SECohort)
 
