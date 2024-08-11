@@ -1,4 +1,31 @@
 *!version 1.0.0  05Aug2024
+
+
+
+/*
+
+// New as of 8/11/2024:
+
+Develops FDID for a Cohort ATT setting, i.e., where we
+average the ATTs across cohorts and develop their confidence
+intervals and inference statistics. This gets rid of the multiple frames
+that were once generated, returning the SA "Staggered Adoption" matrix,
+if more than one unit is treated.
+
+Also returns the long dataframe, so users may make event-study style plots.
+
+
+
+
+To Do List:
+
+Create ACTUAL event study plots (with standard errors for each time point.)
+^ This will need an additional plotting option, which should only work when
+more than one units is treated.
+
+Make the Standard Error matrix a table returned by the post-estimation.
+
+*/
 *****************************************************
 set more off
 
@@ -258,6 +285,7 @@ ereturn mat series= series
 
 if `nwords' > 1 {
 	
+/*
 mkf fdidmatrixres
 cwf fdidmatrixres
 	
@@ -326,6 +354,7 @@ ereturn mat results= `my_matrix'
 
 cwf `originalframe'
 qui cap frame drop fdidmatrixres
+*/
 
 * Create a new macro to store the filtered elements
 local new_color
@@ -384,7 +413,7 @@ qbys cohort: egen totpre = max(abs(eventtime)) if eventtime < 0 // T_pre_a
 egen max_totpost = max(totpost)
 
 
-qbys cohort: egen ATT = mean((totpost/max_totpost)*te) if event >=0 // Cohort ATT, tau_a
+qbys cohort: egen ATT = mean(te) if event >=0 // Cohort ATT, tau_a (totpost/max_totpost)*
 
 tempvar tag
 
@@ -407,23 +436,29 @@ collapse (firstnm) ATT NCohort totpost totpre CohortMSE max_totpost, by(cohort)
 
 // Standard Error of the Cohort ATT
 
-bys cohort: g SECohort = sqrt((totpost/max_totpost)*CohortMSE)
+qbys cohort: g SECohort = sqrt((totpost/totpre)*CohortMSE+CohortMSE)/sqrt(totpost)
 
-bys cohort: g tstat = abs(ATT/SECohort)
+qbys cohort: g tstat = abs(ATT/SECohort)
 
-bys cohort: g p_value = 2 * (1 - normal(tstat))
+qbys cohort: g p_value = 2 * (1 - normal(tstat))
 
-bys cohort: g LB = ATT - (invnormal(0.975) * SECohort)
+qbys cohort: g LB = ATT - (invnormal(0.975) * SECohort)
 
-bys cohort: g UB = ATT + (invnormal(0.975) * SECohort)
+qbys cohort: g UB = ATT + (invnormal(0.975) * SECohort)
+
+tempname SA
+
+qui mkmat cohort ATT NCohort CohortMSE tstat p_value LB UB, mat(`SA') rowpre("Cohort ")
 
 
-
+ereturn mat SA= `SA'
 
 
 }
 cwf longframe
 frame drop `firstframe'
+frame drop EffectFrame
+frame drop wideframe
 }
 cwf `originalframe'
 //cap frame drop `defname'
