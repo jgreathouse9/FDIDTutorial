@@ -175,8 +175,6 @@ To put this another way, the estimates from FDID are basically half of the DID e
 [Under Construction]
 ...
 
-```
-
 Okay, so that's it for the vignette. No doubt people will have questions, suggestions, ideas, or errors to report, concerns, so you may contact me as ususal.
 
 # Contact
