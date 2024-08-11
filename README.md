@@ -38,6 +38,6 @@ u "hcw.dta", clear
 
 fdid gdp, tr(treatt) unitnames(state)  gr2opts(scheme(sj) name(hcwte))
 ```
-Is a minimum worked example because it takes me, from start to finish, how the data was imported and it allows me to see what the error is (the fact the treat varaible was spelled wrong).
+Is a minimum worked example because it takes me, from start to finish, how the data was imported and it allows me to see what the error is (the fact the treat variable was spelled wrong).
 
 Screenshots of your Stata terminal or other things that don't allow me to reproduce the problem aren't helpful in terms of debugging, so including an example which reproduces the problem is the best way to raise issues.
