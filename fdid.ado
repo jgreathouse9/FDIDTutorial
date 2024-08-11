@@ -456,6 +456,7 @@ ereturn mat SA= `SA'
 
 }
 cwf longframe
+drop residsq-CohortMSE
 frame drop `firstframe'
 frame drop EffectFrame
 frame drop wideframe
