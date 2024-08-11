@@ -74,7 +74,7 @@ Naturally, the DID model with the highest R-squared statistic becomes the optima
 {p 4 4 2}
 After selecting the optimal control group, {cmd:fdid} calculates the treatment effect
 along with confidence intervals using the inference procedure as described in {browse "https://doi.org/10.1287/mksc.2022.0212": Li (2024)}. When there are many treated units,
-we take the expectation of the event-time ATTs (that is, the average of all treatment effects for each unit in its respective treated periods). We then pool the variances of each ATT and calculate the standard error of the ATT. Using this, we
+we take the expectation of the event-time ATTs across cohorts. We then calcualte the Cohort variances and calculate the standard error of the ATT. Using this, we
 calculate t-statistics and 95% confidence intervals.  {p_end}
 
 
@@ -137,10 +137,11 @@ Note that each string value pair must be uniquely identified.
 {synopt:{cmd:e(results)}}Table of results (ATT, PATT, SE, t, LB, UB, R2, RMSE){p_end}
 {synopt:{cmd:e(b)}}Coefficients.{p_end}
 {synopt:{cmd:e(V)}}Covariance matrix.{p_end}
+{synopt:{cmd:e(V)}}Staggered Adoption matrix, returning Cohort ATTs/statistics as well as the number of treated units per cohort.{p_end}
 
 {synoptset 20 tabbed}{...}
 {p2col 5 20 24 2: Frames}{p_end}
-{synopt:{cmd:fdidcfframe}}frame for each treated unit (staggered adoption only) {p_end}
+{synopt:{cmd:longframe}}frame combining all treated units together.{p_end}
 
 {marker examples}{...}
 {title:Examples}
