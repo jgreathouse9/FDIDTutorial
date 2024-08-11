@@ -6,6 +6,25 @@ net install fdid, from("https://raw.githubusercontent.com/jgreathouse9/FDIDTutor
 ```
 where you may find the ancillary files with the Basque and HCW data. The vignette for Stata is [here](https://github.com/jgreathouse9/FDIDTutorial/blob/main/StataVignette.md).
 
+- As of 8/11/2024, the Stata version reports Cohort ATTs and inference statistics, however its development is under construction. So, while users may do
+
+```stata
+net from "https://raw.githubusercontent.com/jgreathouse9/FDIDTutorial/main"
+net install fdid, replace
+net get fdid, replace
+// Reinstall fdid so you have the most recent version
+clear *
+qui u basque
+// Import basque
+replace treat = 1 if id==12 & year >=1976
+// Pretend Extremadura (a unit that'll never be a donor) was treated
+cls
+// Estimate FDID
+fdid gdpcap, tr(treat)
+mat l e(SA)
+```
+
+to obtain the basic results, I'm working on developing event study estimates for this as well. So, discussion of staggered adoption is omitted from the Stata Vignette (I'll also do this for the Python version too, after I send the Stata version to Stata Journal)
 
 ## Troubleshooting Forward DID
 
