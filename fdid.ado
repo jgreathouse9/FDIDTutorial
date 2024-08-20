@@ -1,7 +1,28 @@
 *!version 1.0.0  05Aug2024
+*! Jared Greathouse
 
+*****************************************************
 
+* Programmer: Jared A. Greathouse
 
+* Institution:  Georgia State University
+
+* Contact: 	j.greathouse200@gmail.com
+
+* Created on : Jul 12, 2024
+
+* Contents: 1. Purpose
+
+*  2. Program Versions
+
+*****************************************************
+
+* 1. Purpose
+
+** Programs Forward DD from 
+** Li : https://doi.org/10.1287/mksc.2022.0212 
+
+* 2. Program
 /*
 
 // New as of 8/11/2024:
@@ -28,29 +49,6 @@ Make the Standard Error matrix a table returned by the post-estimation.
 */
 *****************************************************
 set more off
-
-*****************************************************
-
-* Programmer: Jared A. Greathouse
-
-* Institution:  Georgia State University
-
-* Contact: 	j.greathouse200@gmail.com
-
-* Created on : Jul 12, 2024
-
-* Contents: 1. Purpose
-
-*  2. Program Versions
-
-*****************************************************
-
-* 1. Purpose
-
-** Programs Forward DD from 
-** Li : https://doi.org/10.1287/mksc.2022.0212 
-
-* 2. Program
 
 prog define fdid, eclass
 
