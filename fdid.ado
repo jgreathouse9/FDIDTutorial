@@ -1068,6 +1068,32 @@ qui su cfdd`trnum' if eventtime`trnum' >=0
 
 scalar pATTDD =  100*scalar(DDATT)/r(mean)
 
+qui rename (ymeandid ymeanfdid) (ymeandid`trnum' ymeanfdid`trnum')
+
+loc rmseround: di %9.5f `RMSE'
+tempvar time2 coef se
+g `time2' = _n
+
+qui cap varabbrev su `time2' if eventt==-1
+
+loc trueneg = r(mean)
+
+
+
+qui reg te`trnum' ib(`trueneg').`time2', nocons
+
+* Pull out the coefficients and SEs
+g `coef' = .
+g `se' = .
+qui levelsof `time2', l(times)
+qui foreach t in `times' {
+	replace `coef' = _b[`t'.`time2'] if `time2' == `t'
+	replace `se' = _se[`t'.`time2'] if `time2' == `t'
+}
+
+* Make confidence intervals
+g ci_top`trnum' = `coef'+1.96*`se'
+g ci_bottom`trnum' = `coef' - 1.96*`se'
 
 if ("`gr2opts'" ~= "") {
 	
@@ -1097,40 +1123,13 @@ loc fitname_cleaned: di ustrregexra("`fitname_cleaned'", "[?@#!{}%()]", "")
 loc grname name(`fitname_cleaned', replace)	
 }
 
-	
 
-twoway (connected te`trnum' eventtime`trnum', connect(direct) msymbol(smdiamond)), ///
-yti("Pointwise Treatment Effect") ///
-yli(0, lpat(-)) xli(0, lwidth(vthin)) `grname' `gr2opts'
+twoway (sc `coef' eventt*, connect(line)) ///
+	(rcap ci_top* ci_bottom* event*),	///
+	yti(Pointwise Treatment Effect) xli(-1, lpat(dash)) ///
+	legend(order(1 "Coefficient" 2 "95% CI")) ///
+	xti("t-`=ustrunescape("\u2113")' until Treatment") `grname' `gr2opts'
 }
-
-qui rename (ymeandid ymeanfdid) (ymeandid`trnum' ymeanfdid`trnum')
-
-loc rmseround: di %9.5f `RMSE'
-tempvar time2 coef se
-g `time2' = _n
-
-qui cap varabbrev su `time2' if eventt==0, mean
-
-loc trueneg = r(mean)-1
-
-
-qui reg te`trnum' ib(`trueneg').`time2', nocons
-
-* Pull out the coefficients and SEs
-g `coef' = .
-g `se' = .
-qui levelsof `time2', l(times)
-qui foreach t in `times' {
-	replace `coef' = _b[`t'.`time2'] if `time2' == `t'
-	replace `se' = _se[`t'.`time2'] if `time2' == `t'
-}
-
-* Make confidence intervals
-g ci_top`trnum' = `coef'+1.96*`se'
-g ci_bottom`trnum' = `coef' - 1.96*`se'
-
-
 qui keep eventtime`trnum' `time' `treated_unit' cf`trnum' cfdd`trnum' te`trnum' ddte`trnum' ymeanfdid`trnum' ymeandid`trnum' ci_top`trnum' ci_bottom`trnum'
 
 qui mkmat *, mat(series)
