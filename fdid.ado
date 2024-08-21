@@ -411,7 +411,7 @@ qbys cohort: egen totpre = max(abs(eventtime)) if eventtime < 0 // T_pre_a
 egen max_totpost = max(totpost)
 
 
-qbys cohort: egen ATT = mean(te) if event >=0 // Cohort ATT, tau_a (totpost/max_totpost)*
+qbys cohort: egen ATT = mean(te) if eventtime >=0 // Cohort ATT, tau_a (totpost/max_totpost)*
 
 tempvar tag
 
@@ -421,7 +421,7 @@ egen NCohort = total(`tag'), by(cohort) // Number of Units per Cohort
 
 // By Cohort, Mean of Residuals Squared
 
-qbys cohort: egen CohortMSE = mean(residsq) if event < 0 // Cohort Pre-Intervention MSE
+qbys cohort: egen CohortMSE = mean(residsq) if eventtime < 0 // Cohort Pre-Intervention MSE
 
 // Puts all of these into a frame
 
@@ -1046,7 +1046,7 @@ scalar o2hat = (r(mean))
 
 scalar ohat = sqrt(scalar(o1hat) + scalar(o2hat))
 
-qui su te if `time' >= `interdate'
+qui su te`trnum' if `time' >= `interdate'
 
 
 scalar ATT = r(mean)
@@ -1107,7 +1107,31 @@ yli(0, lpat(-)) xli(0, lwidth(vthin)) `grname' `gr2opts'
 qui rename (ymeandid ymeanfdid) (ymeandid`trnum' ymeanfdid`trnum')
 
 loc rmseround: di %9.5f `RMSE'
-qui keep eventtime`trnum' `time' `treated_unit' cf`trnum' cfdd`trnum' te`trnum' ddte`trnum' ymeanfdid ymeandid
+tempvar time2 coef se
+g `time2' = _n
+
+qui cap varabbrev su `time2' if eventt==0, mean
+
+loc trueneg = r(mean)-1
+
+
+qui reg te`trnum' ib(`trueneg').`time2', nocons
+
+* Pull out the coefficients and SEs
+g `coef' = .
+g `se' = .
+qui levelsof `time2', l(times)
+qui foreach t in `times' {
+	replace `coef' = _b[`t'.`time2'] if `time2' == `t'
+	replace `se' = _se[`t'.`time2'] if `time2' == `t'
+}
+
+* Make confidence intervals
+g ci_top`trnum' = `coef'+1.96*`se'
+g ci_bottom`trnum' = `coef' - 1.96*`se'
+
+
+qui keep eventtime`trnum' `time' `treated_unit' cf`trnum' cfdd`trnum' te`trnum' ddte`trnum' ymeanfdid`trnum' ymeandid`trnum' ci_top`trnum' ci_bottom`trnum'
 
 qui mkmat *, mat(series)
 
