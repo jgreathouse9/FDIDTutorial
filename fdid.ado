@@ -51,7 +51,7 @@ Make the Standard Error matrix a table returned by the post-estimation.
 set more off
 
 prog define fdid, eclass
-
+cap drop
 qui frame 
 loc originalframe: di r(currentframe)
 
@@ -881,6 +881,17 @@ cwf `cfframe'
 qui frlink 1:1 `time', frame(`__reshape')
 
 qui frget `treated_unit' `best_model'  cfdd`trnum' ymeandid, from(`__reshape') //
+tempname longframeone
+frame put `time' `treated_unit' `best_model', into(`longframeone')
+
+frame `longframeone' {
+qui reshape long `outcome', i(`time') j(id)
+qui g treat = cond(id==`trnum'& `time'>=`interdate',1,0)
+qui xtset id `time'
+
+qui mkmat *, mat(longframe)
+
+}
 
 //di as txt "{hline}"
 
@@ -1072,6 +1083,11 @@ qui rename (ymeandid ymeanfdid) (ymeandid`trnum' ymeanfdid`trnum')
 
 loc rmseround: di %9.5f `RMSE'
 tempvar time2 coef se
+
+/*
+
+Do with fect
+
 g `time2' = _n
 
 qui cap varabbrev su `time2' if eventt==-1
@@ -1094,6 +1110,7 @@ qui foreach t in `times' {
 * Make confidence intervals
 g ci_top`trnum' = `coef'+1.96*`se'
 g ci_bottom`trnum' = `coef' - 1.96*`se'
+*/
 
 if ("`gr2opts'" ~= "") {
 	
@@ -1130,7 +1147,7 @@ twoway (sc `coef' eventt*, connect(line)) ///
 	legend(order(1 "Coefficient" 2 "95% CI")) ///
 	xti("t-`=ustrunescape("\u2113")' until Treatment") `grname' `gr2opts'
 }
-qui keep eventtime`trnum' `time' `treated_unit' cf`trnum' cfdd`trnum' te`trnum' ddte`trnum' ymeanfdid`trnum' ymeandid`trnum' ci_top`trnum' ci_bottom`trnum'
+qui keep eventtime`trnum' `time' `treated_unit' cf`trnum' cfdd`trnum' te`trnum' ddte`trnum' ymeanfdid`trnum' ymeandid`trnum' //ci_top`trnum' ci_bottom`trnum'
 
 qui mkmat *, mat(series)
 
