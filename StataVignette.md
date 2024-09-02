@@ -120,7 +120,7 @@ See Li (2024) for technical details.
 ```
 and the plot
 <p align="center">
-  <img src="FDIDP99.png" alt="Alt Text">
+  <img src="FDIDP99Update.png" alt="Alt Text">
 </p>
 
 We can prove that the same result is given in Stata's native ```xtdidregress```
