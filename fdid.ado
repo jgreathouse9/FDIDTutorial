@@ -1171,7 +1171,7 @@ ereturn post b V, depname(`outcome')
 
 
 matrix rownames `my_matrix' = Statistics
-
+ereturn mat didframe = longframe
 ereturn loc U "`controls'"
 ereturn mat results = `my_matrix'
 
