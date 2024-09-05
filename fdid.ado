@@ -385,9 +385,9 @@ frame drop `change'
 
 frame put *, into(wideframe)
 
-frame put *, into(longframe)
+frame put *, into(multiframe)
 
-frame longframe {
+frame multiframe {
 qui reshape long `depvar' cf te eventtime cfdd ymeandid ymeanfdid ddte, i(`time') j(`panel')
 sort `panel' `time'
 
@@ -443,17 +443,17 @@ qbys cohort: g p_value = 2 * (1 - normal(tstat))
 qbys cohort: g LB = ATT - (invnormal(0.975) * SECohort)
 
 qbys cohort: g UB = ATT + (invnormal(0.975) * SECohort)
-
+ereturn clear
 tempname SA
 
-qui mkmat cohort ATT NCohort CohortMSE tstat p_value LB UB, mat(`SA') rowpre("Cohort ")
+qui mkmat cohort ATT NCohort, mat(`SA') rowpre("Cohort ") // tstat p_value LB UB
 
 
 ereturn mat SA= `SA'
 
 
 }
-cwf longframe
+cwf multiframe
 drop residsq-CohortMSE
 frame drop `firstframe'
 frame drop EffectFrame
