@@ -139,10 +139,6 @@ Note that each string value pair must be uniquely identified.
 {synopt:{cmd:e(dyneff)}}Dynamic Treatment Effects.{p_end}
 {synopt:{cmd:e(SA)}}Cohort and ATT whem many units are treated.{p_end}
 
-{synoptset 20 tabbed}{...}
-{p2col 5 20 24 2: Frames}{p_end}
-{synopt:{cmd:longframe}}frame combining all treated units together.{p_end}
-
 {marker examples}{...}
 {title:Examples}
 
