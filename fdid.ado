@@ -1,4 +1,5 @@
-*!version 1.0.0  05Aug2024
+*!version 1.0.1  12Sep2024
+*! requires sdid and sdid_event
 *! Jared Greathouse
 
 *****************************************************
@@ -887,7 +888,35 @@ frame put `time' `treated_unit' `best_model', into(`longframeone')
 frame `longframeone' {
 qui reshape long `outcome', i(`time') j(id)
 qui g treat = cond(id==`trnum'& `time'>=`interdate',1,0)
+
+qui su treat if treat==1
+
+loc post = r(N)
+
 qui xtset id `time'
+
+qui sdid_event `outcome' id `time' treat, method(did) brep(500) placebo(all)
+loc  plase= e(H)[1,2]
+local row `= rowsof(e(H))' 
+
+
+mat res = e(H)[2..`row',1..4]
+
+tempname newframe2
+mkf `newframe2'
+cwf `newframe2'
+
+qui svmat res
+
+qui rename (res1 res2 res3 res4) (eff se lb ub)
+
+g t = eff/se, a(se)
+
+
+gen eventtime = _n - 1 if !missing(eff)
+qui replace eventtime = `post' - _n if _n > `post' & !missing(eff)
+sort eventtime
+
 
 qui mkmat *, mat(longframe)
 
@@ -1084,34 +1113,6 @@ qui rename (ymeandid ymeanfdid) (ymeandid`trnum' ymeanfdid`trnum')
 loc rmseround: di %9.5f `RMSE'
 tempvar time2 coef se
 
-/*
-
-Do with fect
-
-g `time2' = _n
-
-qui cap varabbrev su `time2' if eventt==-1
-
-loc trueneg = r(mean)
-
-
-
-qui reg te`trnum' ib(`trueneg').`time2', nocons
-
-* Pull out the coefficients and SEs
-g `coef' = .
-g `se' = .
-qui levelsof `time2', l(times)
-qui foreach t in `times' {
-	replace `coef' = _b[`t'.`time2'] if `time2' == `t'
-	replace `se' = _se[`t'.`time2'] if `time2' == `t'
-}
-
-* Make confidence intervals
-g ci_top`trnum' = `coef'+1.96*`se'
-g ci_bottom`trnum' = `coef' - 1.96*`se'
-*/
-
 if ("`gr2opts'" ~= "") {
 	
 
@@ -1140,18 +1141,20 @@ loc fitname_cleaned: di ustrregexra("`fitname_cleaned'", "[?@#!{}%()]", "")
 loc grname name(`fitname_cleaned', replace)	
 }
 
-
-twoway (sc `coef' eventt*, connect(line)) ///
-	(rcap ci_top* ci_bottom* event*),	///
-	yti(Pointwise Treatment Effect) xli(-1, lpat(dash)) ///
-	legend(order(1 "Coefficient" 2 "95% CI")) ///
-	xti("t-`=ustrunescape("\u2113")' until Treatment") `grname' `gr2opts'
+frame `newframe2' {
+        twoway (rarea  lb ub eventtime, fcolor(pink) lcolor(pink)) ///
+	(scatter eff eventtime, mc(gs10) ms(d) msize(*.5)), ///
+	legend(off) ///
+	title(Dynamic Effects) xtitle("t-`=ustrunescape("\u2113")' until Treatment") ///
+	ytitle(Pointwise Effect) ///
+	yline(0,lc(gs5) lp(-)) xline(0, lc(black) lp(solid))  `grname' `gr2opts'
+	}
 }
 qui keep eventtime`trnum' `time' `treated_unit' cf`trnum' cfdd`trnum' te`trnum' ddte`trnum' ymeanfdid`trnum' ymeandid`trnum' //ci_top`trnum' ci_bottom`trnum'
 
 qui mkmat *, mat(series)
 
-scalar SE = scalar(ohat)/sqrt(scalar(t2))
+scalar SE = `plase' //scalar(ohat)/sqrt(scalar(t2))
 scalar tstat = abs(scalar(ATT)/(scalar(SE)))
 
 tempname my_matrix
@@ -1217,7 +1220,7 @@ ereturn scalar ATT = round(scalar(ATT), 0.0001)
 ereturn scalar CIUB = round(scalar(CIUB), 0.0001)
 
 * Round the scalar se to 3 decimal places
-ereturn scalar se = round(scalar(SE), 0.0001)
+ereturn scalar se = round(scalar(SE), 0.0001) // scalar(SE)
 
 * Round the scalar tstat to 2 decimal places
 ereturn scalar tstat = round(scalar(tstat), 0.01)
