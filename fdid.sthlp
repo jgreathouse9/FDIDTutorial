@@ -34,7 +34,7 @@
 
 {p2colreset}{...}
 
-{p 4 4 2}{helpb xtset} {it:panelvar} {it:timevar} must be used to declare a strongly balanced panel dataset without gaps.
+{p 4 4 2}{helpb xtset} {it:panelvar} {it:timevar} must be used to declare a strongly balanced panel dataset without gaps. {cmd:sdid_event} is also required.
 
 {p 4 4 2}
 {depvar} The numeric outcome of interest.{p_end}
@@ -137,7 +137,8 @@ Note that each string value pair must be uniquely identified.
 {synopt:{cmd:e(results)}}Table of results (ATT, PATT, SE, t, LB, UB, R2, RMSE){p_end}
 {synopt:{cmd:e(b)}}Coefficients.{p_end}
 {synopt:{cmd:e(V)}}Covariance matrix.{p_end}
-{synopt:{cmd:e(V)}}Staggered Adoption matrix, returning Cohort ATTs/statistics as well as the number of treated units per cohort.{p_end}
+{synopt:{cmd:e(dyneff)}}Dynamic Treatment Effects.{p_end}
+{synopt:{cmd:e(SA)}}Cohort and ATT whem many units are treated.{p_end}
 
 {synoptset 20 tabbed}{...}
 {p2col 5 20 24 2: Frames}{p_end}
