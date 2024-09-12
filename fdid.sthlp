@@ -34,7 +34,7 @@
 
 {p2colreset}{...}
 
-{p 4 4 2}{helpb xtset} {it:panelvar} {it:timevar} must be used to declare a strongly balanced panel dataset without gaps. {cmd:sdid_event} is also required.
+{p 4 4 2}{helpb xtset} {it:panelvar} {it:timevar} must be used to declare a strongly balanced panel dataset without gaps. {cmd:sdid_event} is also {browse "https://github.com/DiegoCiccia/sdid/tree/main/sdid_event#github":required}.
 
 {p 4 4 2}
 {depvar} The numeric outcome of interest.{p_end}
@@ -74,8 +74,7 @@ Naturally, the DID model with the highest R-squared statistic becomes the optima
 {p 4 4 2}
 After selecting the optimal control group, {cmd:fdid} calculates the treatment effect
 along with confidence intervals using the inference procedure as described in {browse "https://doi.org/10.1287/mksc.2022.0212": Li (2024)}. When there are many treated units,
-we take the expectation of the event-time ATTs across cohorts. We then calcualte the Cohort variances and calculate the standard error of the ATT. Using this, we
-calculate t-statistics and 95% confidence intervals.  {p_end}
+we take the expectation of the event-time ATTs across cohorts.  {p_end}
 
 
 {marker options}{...}
