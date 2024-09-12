@@ -25,7 +25,7 @@
 {cmdab:fdid}
 [{depvar}]
 {ifin},
-{opt tr:eated}({varname}) [{opt gr1opts}({it:string}) {opt gr2opts}({it:string}) {cmd: unitnames}({it:{varname}})]
+{opt tr:eated}({varname}) [{opt gr1opts}({it:string}) {opt gr2opts}({it:string}) {cmd: unitnames}({it:{varname}}) {opt placebo}]
 
 
 {synoptset 20 tabbed}{...}
@@ -95,6 +95,9 @@ we take the expectation of the event-time ATTs across cohorts.  {p_end}
 However, if the panel does not come with value labels,
 then the user must specify the string variable they wish to use as the panel variable's value labels.
 Note that each string value pair must be uniquely identified.
+
+{phang}
+{opt placebo}: If specified, reports the placebo standard error for the ATT from {browse "https://github.com/DiegoCiccia/sdid/tree/main/sdid_event#github":sdid_event}.
 
 {synoptline}
 
