@@ -896,7 +896,7 @@ loc post = r(N)
 
 qui xtset id `time'
 
-qui sdid_event `outcome' id `time' treat, method(did) brep(500) placebo(all)
+qui sdid_event `outcome' id `time' treat, method(did) brep(1000) placebo(all)
 loc  plase= e(H)[1,2]
 local row `= rowsof(e(H))' 
 
@@ -1097,9 +1097,9 @@ qui su cf`trnum' if eventtime`trnum' >=0
 scalar pATT =  100*scalar(ATT)/r(mean)
 
 
-scalar CILB = scalar(ATT) - (((invnormal(0.975) * scalar(ohat)))/sqrt(scalar(t2)))
+scalar CILB = scalar(ATT) - (((invnormal(0.975) * `plase')))
 
-scalar CIUB =  scalar(ATT) + (((invnormal(0.975) * scalar(ohat)))/sqrt(scalar(t2)))
+scalar CIUB =  scalar(ATT) + (((invnormal(0.975) * `plase')))
 
 qui su ddte`trnum' if eventtime`trnum' >= 0, mean
 scalar DDATT = r(mean)
