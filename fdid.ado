@@ -108,7 +108,7 @@ _xtstrbal `panel' `time' `touse'
 	syntax anything [if], ///
 		TReated(varname) /// We need a treatment variable as 0 1
 		[gr1opts(string asis)] [gr2opts(string asis)] ///
-		[unitnames(varlist max=1 string)]
+		[unitnames(varlist max=1 string)] [placebo]
 		
 		
    /* if unitname specified, grab the label here */
@@ -265,7 +265,7 @@ est_dd, time(`time') ///
 	panel(`panel') ///
 	outcome(`depvar') ///
 	trnum(`x') treatment(`treated') ///
-	cfframe(`defname') ntr(`nwords') copyname(`__dfcopy')
+	cfframe(`defname') ntr(`nwords') copyname(`__dfcopy') placebo(`placebo')
 	
         if `nwords' > 1 {
             matrix resmat = e(results)
@@ -619,7 +619,7 @@ syntax, ///
 	outcome(string asis) ///
 	trnum(numlist min=1 max=1 >=1 int) ///
 	treatment(string) [outlab(string asis)] ///
-	cfframe(string) ntr(numlist min=1 max=1 >=1 int) copyname(string asis)
+	cfframe(string) ntr(numlist min=1 max=1 >=1 int) copyname(string asis) [placebo(string)]
 
 	
 local curframe = c(frame)
@@ -896,7 +896,7 @@ loc post = r(N)
 
 qui xtset id `time'
 
-qui sdid_event `outcome' id `time' treat, method(did) brep(1000) placebo(all)
+qui sdid_event `outcome' id `time' treat, method(did) brep(2000) placebo(all)
 loc  plase= e(H)[1,2]
 local row `= rowsof(e(H))' 
 
@@ -1096,10 +1096,21 @@ qui su cf`trnum' if eventtime`trnum' >=0
 
 scalar pATT =  100*scalar(ATT)/r(mean)
 
+if  "`placebo'"== "placebo" {
+scalar SE = `plase'
+	
+	
+}
 
-scalar CILB = scalar(ATT) - (((invnormal(0.975) * `plase')))
+else {
 
-scalar CIUB =  scalar(ATT) + (((invnormal(0.975) * `plase')))
+scalar SE = scalar(ohat)/sqrt(scalar(t2))
+}
+
+
+scalar CILB = scalar(ATT) - (((invnormal(0.975) * scalar(SE))))
+
+scalar CIUB =  scalar(ATT) + (((invnormal(0.975) * scalar(SE))))
 
 qui su ddte`trnum' if eventtime`trnum' >= 0, mean
 scalar DDATT = r(mean)
@@ -1143,7 +1154,7 @@ loc grname name(`fitname_cleaned', replace)
 }
 
 frame `newframe2' {
-        twoway (rarea  lb ub eventtime, fcolor(gs10%20) lcolor(gs10%20)) ///
+        twoway (rcap  lb ub eventtime, fcolor(gs7%50) lcolor(gs7%50)) ///
 	(scatter eff eventtime, mc(black) ms(d) msize(*.5)), ///
 	legend(off) ///
 	title(Dynamic Effects) xtitle("t-`=ustrunescape("\u2113")' until Treatment") ///
@@ -1155,7 +1166,6 @@ qui keep eventtime`trnum' `time' `treated_unit' cf`trnum' cfdd`trnum' te`trnum' 
 
 qui mkmat *, mat(series)
 
-scalar SE = `plase' //scalar(ohat)/sqrt(scalar(t2))
 scalar tstat = abs(scalar(ATT)/(scalar(SE)))
 
 tempname my_matrix
