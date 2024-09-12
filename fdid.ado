@@ -1142,7 +1142,7 @@ loc grname name(`fitname_cleaned', replace)
 }
 
 frame `newframe2' {
-        twoway (rarea  lb ub eventtime, fcolor(pink) lcolor(pink)) ///
+        twoway (rarea  lb ub eventtime, fcolor(gs10) lcolor(gs10)) ///
 	(scatter eff eventtime, mc(gs10) ms(d) msize(*.5)), ///
 	legend(off) ///
 	title(Dynamic Effects) xtitle("t-`=ustrunescape("\u2113")' until Treatment") ///
