@@ -461,7 +461,8 @@ frame drop EffectFrame
 frame drop wideframe
 }
 cwf `originalframe'
-//cap frame drop `defname'
+cap frame drop `defname'
+cap frame drop multiframe
 end
 
 /**********************************************************
