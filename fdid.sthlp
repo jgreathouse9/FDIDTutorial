@@ -113,19 +113,12 @@ Note that each string value pair must be uniquely identified.
 {synopt:{cmd:e(T0)}}treatment point.{p_end}
 {synopt:{cmd:e(T2)}}number of post-intervention periods{p_end}
 {synopt:{cmd:e(T)}}number of time periods.{p_end}
-{synopt:{cmd:e(r2)}}R-Squared for FDID method in pre-intervention period.{p_end}
 {synopt:{cmd:e(DDr2)}}R-Squared for DID method with all controls.{p_end}
-{synopt:{cmd:e(rmse)}}Pre-intervention root mean squared error for FDID method.{p_end}
 {synopt:{cmd:e(N0)}}Number of controls.{p_end}
 {synopt:{cmd:e(N0U)}}Number of controls selected by FDID.{p_end}
 {synopt:{cmd:e(DDATT)}}ATT for DID method.{p_end}
 {synopt:{cmd:e(pDDATT)}}Percent ATT for DID method.{p_end}
 {synopt:{cmd:e(pATT)}}Percent ATT for FDID method.{p_end}
-{synopt:{cmd:e(CILB)}}Lower Bound of ATT for FDID method, 95% Confidence Interval.{p_end}
-{synopt:{cmd:e(ATT)}}ATT for FDID method.{p_end}
-{synopt:{cmd:e(CIUB)}}Upper Bound of ATT for FDID method, 95% Confidence Interval.{p_end}
-{synopt:{cmd:e(se)}}Standard Error of ATT for FDID method.{p_end}
-{synopt:{cmd:e(tstat)}}t-statistic of ATT for FDID method.{p_end}
 
 {synoptset 20 tabbed}{...}
 {p2col 5 20 24 2: Macros}{p_end}
@@ -136,11 +129,10 @@ Note that each string value pair must be uniquely identified.
 {synoptset 20 tabbed}{...}
 {p2col 5 20 24 2: Matrices}{p_end}
 {synopt:{cmd:e(series)}}A matrix containing the time, observed values, counterfactual values, pointwise treatment effect, event time, and means for the all controls and FDID controls.{p_end}
-{synopt:{cmd:e(results)}}Table of results (ATT, PATT, SE, t, LB, UB, R2, RMSE){p_end}
+{synopt:{cmd:e(results)}}Table of results {p_end}
 {synopt:{cmd:e(b)}}Coefficients.{p_end}
 {synopt:{cmd:e(V)}}Covariance matrix.{p_end}
 {synopt:{cmd:e(dyneff)}}Dynamic Treatment Effects.{p_end}
-{synopt:{cmd:e(SA)}}Cohort and ATT whem many units are treated.{p_end}
 
 {marker examples}{...}
 {title:Examples}
