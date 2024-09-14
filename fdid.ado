@@ -450,7 +450,7 @@ tempname SA
 qui mkmat cohort ATT NCohort, mat(`SA') rowpre("Cohort ") // tstat p_value LB UB
 
 
-ereturn mat SA= `SA'
+ereturn mat results= `SA'
 
 
 }
