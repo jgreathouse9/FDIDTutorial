@@ -192,7 +192,7 @@ qui levelsof `panel' if `treated'==1, loc(trunit)
 local nwords :  word count `trunit'
 
 if `nwords' > 1 {
-    matrix empty_matrix = J(1, 8, .)  // Initialize an empty matrix with 0 rows and 7 columns
+    matrix empty_matrix = J(1, 7, .)  // Initialize an empty matrix with 0 rows and 7 columns
 
     matrix combined_matrix = empty_matrix  // Initialize combined_matrix as empty
 }
@@ -283,77 +283,6 @@ ereturn mat series= series
 }
 
 if `nwords' > 1 {
-	
-/*
-mkf fdidmatrixres
-cwf fdidmatrixres
-	
-* Convert the matrix "results" into a dataset named "myresults"
-qui svmat combined_matrix, names(col)
-keep c1 c2 c3
-
-qui drop in 1
-
-qui rename (*) (ATT PATT SE)
-
-qui su ATT, mean
-
-// Calculate the combined ATT
-scalar ATT_combined = r(mean)
-
-qui su PATT, mean
-
-scalar PATT_combined = r(mean)
-
-qui su SE
-
-// Calculate the combined variance
-scalar var_combined = r(Var)
-
-// Calculate the combined SE
-scalar SE_combined = sqrt(scalar(var_combined))
-
-// Calculate the 95% Confidence Interval
-scalar CI_lower = scalar(ATT_combined) - (invnormal(0.975) * scalar(SE_combined))
-scalar CI_upper = scalar(ATT_combined) + (invnormal(0.975) * scalar(SE_combined))
-
-    // Assume you have already computed ATT_combined and SE_combined
-    // Calculate t-statistic
-    scalar tstat = scalar(ATT_combined) / scalar(SE_combined)
-
-    // Calculate p-value (two-sided)
-    scalar p_value = 2 * (1 - normal(abs(scalar(tstat))))
-
-di as res "`tabletitle'" "
-di as text "{hline 13}{c TT}{hline 63}"
-di as text %12s abbrev("`depvar'",12) " {c |}     ATT     Std. Err.     t      P>|t|    [95% Conf. Interval]" 
-di as text "{hline 13}{c +}{hline 63}"
-di as text %12s abbrev("`treated'",12) " {c |} " as result %9.5f scalar(ATT_combined) "  " %9.5f scalar(SE_combined) %9.2f scalar(tstat) %9.3f scalar(p_value) "   " %9.5f scalar(CI_lower) "   " %9.5f scalar(CI_upper)
-di as text "{hline 13}{c BT}{hline 63}"
-di as text "See Li (2024) for technical details."
-di as text "Effects are calculated in event-time using never-treated units."
-
-
-tempname my_matrix
-matrix `my_matrix' = (scalar(ATT_combined), scalar(PATT_combined), scalar(SE_combined), scalar(tstat), scalar(CI_lower), scalar(CI_upper))
-matrix colnames `my_matrix' = ATT PATT SE t LB UB
-
-matrix rownames `my_matrix' = Result
-ereturn clear
-
-matrix b=scalar(ATT_combined)
-matrix V=scalar(SE_combined)^2
-matrix colnames b=`treated'
-matrix rownames b=`depvar'
-matrix colnames V=`treated'
-matrix rownames V=`treated'
-ereturn post b V, depname(`depvar')
-
-ereturn mat results= `my_matrix'
-
-cwf `originalframe'
-qui cap frame drop fdidmatrixres
-*/
 
 * Create a new macro to store the filtered elements
 local new_color
@@ -461,6 +390,23 @@ frame drop EffectFrame
 frame drop wideframe
 }
 cwf `originalframe'
+
+/*
+xtdidregress (`depvar') (`treated'), group(`panel') time(`time')
+
+if "`placebo'" == "" {
+	
+	ereturn scalar DDLB = r(table)[5,1]
+	ereturn scalar DDUB = r(table)[6,1]
+}
+
+else {
+qui sdid_event `depvar' `panel' `time' `treated', method(did) brep(500)
+
+ereturn scalar DDLB = e(H)[1,3]
+ereturn scalar DDUB = e(H)[1,4]
+}
+*/
 cap frame drop `defname'
 cap frame drop multiframe
 end
@@ -636,8 +582,16 @@ qbys `panel': egen et = max(`treatment')
 qui keep if et ==0 | `panel'==`trnum'
 
 
-qui keep `panel' `time' `outcome'
+qui keep `panel' `time' `outcome' `treatment'
 
+qui xtdidregress (`outcome') (`treatment'), group(`panel') time(`time')
+
+loc DDLB = r(table)[5,1]
+loc DDUB = r(table)[6,1]
+
+loc DDT= r(table)[3,1]
+
+drop `treatment'
 
 qui reshape wide `outcome', j(`panel') i(`time')
 
@@ -1115,7 +1069,6 @@ scalar CIUB =  scalar(ATT) + (((invnormal(0.975) * scalar(SE))))
 qui su ddte`trnum' if eventtime`trnum' >= 0, mean
 scalar DDATT = r(mean)
 
-
 qui su cfdd`trnum' if eventtime`trnum' >=0 
 
 scalar pATTDD =  100*scalar(DDATT)/r(mean)
@@ -1167,10 +1120,17 @@ qui keep eventtime`trnum' `time' `treated_unit' cf`trnum' cfdd`trnum' te`trnum' 
 qui mkmat *, mat(series)
 
 scalar tstat = abs(scalar(ATT)/(scalar(SE)))
+qui su ddte`trnum' if eventtime`trnum' < 0, mean
 
-tempname my_matrix
-matrix `my_matrix' = (scalar(ATT), scalar(pATT), scalar(SE), scalar(tstat), scalar(CILB), scalar(CIUB), scalar(r2), `rmseround')
-matrix colnames `my_matrix' = ATT PATT SE t LB UB R2 RMSE
+loc DDRMSE = sqrt(r(mean))
+
+tempname my_matrix my_matrix2
+matrix `my_matrix' = (scalar(ATT), scalar(pATT), scalar(SE), scalar(tstat), scalar(CILB), scalar(CIUB), scalar(r2))
+matrix `my_matrix2' = (scalar(DDATT), round(scalar(pATTDD), 0.0001), scalar(DDATT)/`DDT', `DDT', `DDLB', `DDUB', round(scalar(DDr2), 0.0001))
+matrix colnames `my_matrix' = ATT PATT SE t LB UB R2
+
+matrix colnames `my_matrix2' = ATT PATT SE t LB UB R2
+
 ereturn clear
 
 matrix b=scalar(ATT)
@@ -1184,10 +1144,14 @@ ereturn post b V, depname(`outcome')
 
 
 
-matrix rownames `my_matrix' = Statistics
+matrix rownames `my_matrix' = FDID
+matrix rownames `my_matrix2' = DID
 ereturn mat dyneff = longframe
 ereturn loc U "`controls'"
-ereturn mat results = `my_matrix'
+
+tempname resmat
+mat `resmat' = `my_matrix' \ `my_matrix2'
+ereturn mat results = `resmat'
 
 ereturn mat series = series
 
@@ -1197,21 +1161,9 @@ ereturn scalar T2 = `t2'
 
 ereturn scalar T= `t1'+`t2'
 
-* Round the scalar DDr2 to 3 decimal places
-ereturn scalar DDr2 = round(scalar(DDr2), 0.0001)
-
 * Assign the local N0U to the count of words in best_model and round if needed
 local N0U: word count `best_model'
 ereturn scalar N0U = `N0U'  // No rounding needed as this is a count
-
-* Round the scalar DDATT to 3 decimal places
-ereturn scalar DDATT = round(scalar(DDATT), 0.0001)
-
-* Round the scalar pDDATT to 3 decimal places
-ereturn scalar pDDATT = round(scalar(pATTDD), 0.0001)
-
-* Round the scalar pATT to 3 decimal places
-ereturn scalar pATT = round(scalar(pATT), 0.0001)
 
 scalar p_value = 2 * (1 - normal(scalar(tstat)))
 
