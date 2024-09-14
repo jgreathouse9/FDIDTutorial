@@ -896,7 +896,7 @@ loc post = r(N)
 
 qui xtset id `time'
 
-qui sdid_event `outcome' id `time' treat, method(did) brep(2000) placebo(all)
+qui sdid_event `outcome' id `time' treat, method(did) brep(500) placebo(all)
 loc  plase= e(H)[1,2]
 local row `= rowsof(e(H))' 
 
