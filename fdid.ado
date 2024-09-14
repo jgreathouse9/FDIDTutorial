@@ -1197,16 +1197,8 @@ ereturn scalar T2 = `t2'
 
 ereturn scalar T= `t1'+`t2'
 
-
-* Assuming you want to round to 3 decimal places for most values and 2 for others
-* Round the scalar r2 to 3 decimal places
-ereturn scalar r2 = round(scalar(r2), 0.0001)
-
 * Round the scalar DDr2 to 3 decimal places
 ereturn scalar DDr2 = round(scalar(DDr2), 0.0001)
-
-* Round the scalar rmse to 3 decimal places
-ereturn scalar rmse = round(`RMSE', 0.0001)
 
 * Assign the local N0U to the count of words in best_model and round if needed
 local N0U: word count `best_model'
@@ -1220,22 +1212,6 @@ ereturn scalar pDDATT = round(scalar(pATTDD), 0.0001)
 
 * Round the scalar pATT to 3 decimal places
 ereturn scalar pATT = round(scalar(pATT), 0.0001)
-
-* Round the scalar CILB to 3 decimal places
-ereturn scalar CILB = round(scalar(CILB), 0.0001)
-
-* Round the scalar ATT to 3 decimal places
-ereturn scalar ATT = round(scalar(ATT), 0.0001)
-
-* Round the scalar CIUB to 3 decimal places
-ereturn scalar CIUB = round(scalar(CIUB), 0.0001)
-
-* Round the scalar se to 3 decimal places
-ereturn scalar se = round(scalar(SE), 0.0001) // scalar(SE)
-
-* Round the scalar tstat to 2 decimal places
-ereturn scalar tstat = round(scalar(tstat), 0.01)
-
 
 scalar p_value = 2 * (1 - normal(scalar(tstat)))
 
