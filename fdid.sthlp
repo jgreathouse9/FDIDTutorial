@@ -113,12 +113,8 @@ Note that each string value pair must be uniquely identified.
 {synopt:{cmd:e(T0)}}treatment point.{p_end}
 {synopt:{cmd:e(T2)}}number of post-intervention periods{p_end}
 {synopt:{cmd:e(T)}}number of time periods.{p_end}
-{synopt:{cmd:e(DDr2)}}R-Squared for DID method with all controls.{p_end}
 {synopt:{cmd:e(N0)}}Number of controls.{p_end}
 {synopt:{cmd:e(N0U)}}Number of controls selected by FDID.{p_end}
-{synopt:{cmd:e(DDATT)}}ATT for DID method.{p_end}
-{synopt:{cmd:e(pDDATT)}}Percent ATT for DID method.{p_end}
-{synopt:{cmd:e(pATT)}}Percent ATT for FDID method.{p_end}
 
 {synoptset 20 tabbed}{...}
 {p2col 5 20 24 2: Macros}{p_end}
