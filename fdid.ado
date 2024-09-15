@@ -1148,6 +1148,7 @@ matrix rownames `my_matrix' = FDID
 matrix rownames `my_matrix2' = DID
 ereturn mat dyneff = longframe
 ereturn loc U "`controls'"
+ereturn scalar N0 = `N0'
 
 tempname resmat
 mat `resmat' = `my_matrix' \ `my_matrix2'
