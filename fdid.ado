@@ -1148,7 +1148,6 @@ matrix rownames `my_matrix' = FDID
 matrix rownames `my_matrix2' = DID
 ereturn mat dyneff = longframe
 ereturn loc U "`controls'"
-ereturn scalar N0 = `N0'
 
 tempname resmat
 mat `resmat' = `my_matrix' \ `my_matrix2'
@@ -1156,15 +1155,18 @@ ereturn mat results = `resmat'
 
 ereturn mat series = series
 
-ereturn scalar T1 = `t1'
-ereturn scalar T0= `interdate'
-ereturn scalar T2 = `t2'
-
-ereturn scalar T= `t1'+`t2'
-
 * Assign the local N0U to the count of words in best_model and round if needed
 local N0U: word count `best_model'
-ereturn scalar N0U = `N0U'  // No rounding needed as this is a count
+
+tempname setting
+
+mat `setting' = (`N0',`N0U',`t1',`interdate',`t2',`t1'+`t2')
+
+mat rownames `setting' = "Setting"
+mat colnames `setting' = "Total Controls" "Selected Controls" "Pre Periods" "Treatment Point" "Post Periods" "Total Time Periods"
+
+ereturn mat setting = `setting'
+
 
 scalar p_value = 2 * (1 - normal(scalar(tstat)))
 
