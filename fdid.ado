@@ -584,14 +584,36 @@ qui keep if et ==0 | `panel'==`trnum'
 
 qui keep `panel' `time' `outcome' `treatment'
 
+if "`placebo'" == "" {
+	
+
 qui xtdidregress (`outcome') (`treatment'), group(`panel') time(`time')
 
 loc DDLB = r(table)[5,1]
 loc DDUB = r(table)[6,1]
-
+loc DDATT =  r(table)[1,1]
 loc DDT= r(table)[3,1]
+loc ddse = r(table)[1,1]/`DDT'
+drop `treatment'
+
+}
+
+else {
+	
+	
+	qui sdid_event `outcome' `panel' `time' `treatment', method(did) brep(500) placebo(all)
+	
+	loc ddse = e(H)[1,2]
+	loc DDATT = e(H)[1,1]
+	
+	loc DDLB = `DDATT' - (((invnormal(0.975) * `ddse')))
+loc DDUB = `DDATT' + (((invnormal(0.975) * `ddse')))
+
+loc DDT= abs(`DDATT'/`ddse')
 
 drop `treatment'
+}
+
 
 qui reshape wide `outcome', j(`panel') i(`time')
 
@@ -958,7 +980,7 @@ loc grname name(`fitname_cleaned', replace)
 }
 
 twoway (line `treated_unit' `time', lcol(black) lwidth(medthick) lpat(solid)) ///
-(line cf`trnum' `time', lpat(longdash) lwidth(thin) lcol(black)) ///
+(line cf`trnum' `time', lpat(solid) lwidth(thin) lcol(black)) ///
 (line cfdd`trnum' `time', lpat(shortdash) lwidth(medthick) lcol(gs8)), ///
 yti("`treatst' `outlab'") ///
 legend(order(1 "Observed" 2 "FDID" 3 "DD")) ///
@@ -1065,13 +1087,9 @@ scalar SE = scalar(ohat)/sqrt(scalar(t2))
 scalar CILB = scalar(ATT) - (((invnormal(0.975) * scalar(SE))))
 
 scalar CIUB =  scalar(ATT) + (((invnormal(0.975) * scalar(SE))))
-
-qui su ddte`trnum' if eventtime`trnum' >= 0, mean
-scalar DDATT = r(mean)
-
 qui su cfdd`trnum' if eventtime`trnum' >=0 
 
-scalar pATTDD =  100*scalar(DDATT)/r(mean)
+scalar pATTDD =  100*`DDATT'/r(mean)
 
 qui rename (ymeandid ymeanfdid) (ymeandid`trnum' ymeanfdid`trnum')
 
@@ -1126,7 +1144,7 @@ loc DDRMSE = sqrt(r(mean))
 
 tempname my_matrix my_matrix2
 matrix `my_matrix' = (scalar(ATT), scalar(pATT), scalar(SE), scalar(tstat), scalar(CILB), scalar(CIUB), scalar(r2))
-matrix `my_matrix2' = (scalar(DDATT), round(scalar(pATTDD), 0.0001), scalar(DDATT)/`DDT', `DDT', `DDLB', `DDUB', round(scalar(DDr2), 0.0001))
+matrix `my_matrix2' = (`DDATT', round(scalar(pATTDD), 0.0001), `ddse', abs(`DDT'), `DDLB', `DDUB', round(scalar(DDr2), 0.0001))
 matrix colnames `my_matrix' = ATT PATT SE t LB UB R2
 
 matrix colnames `my_matrix2' = ATT PATT SE t LB UB R2
