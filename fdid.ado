@@ -24,35 +24,11 @@
 ** Li : https://doi.org/10.1287/mksc.2022.0212 
 
 * 2. Program
-/*
 
-// New as of 8/11/2024:
-
-Develops FDID for a Cohort ATT setting, i.e., where we
-average the ATTs across cohorts and develop their confidence
-intervals and inference statistics. This gets rid of the multiple frames
-that were once generated, returning the SA "Staggered Adoption" matrix,
-if more than one unit is treated.
-
-Also returns the long dataframe, so users may make event-study style plots.
-
-
-
-
-To Do List:
-
-Create ACTUAL event study plots (with standard errors for each time point.)
-^ This will need an additional plotting option, which should only work when
-more than one units is treated.
-
-Make the Standard Error matrix a table returned by the post-estimation.
-
-*/
 *****************************************************
 set more off
 
 prog define fdid, eclass
-cap drop
 qui frame 
 loc originalframe: di r(currentframe)
 
@@ -98,6 +74,14 @@ if _rc {
 loc time: disp "`r(timevar)'"
 
 loc panel: disp "`r(panelvar)'"
+
+cap which sdid_event
+
+if _rc ==111 {
+	
+	disp as err "Install sdid_event before using fdid".
+	exit 498
+}
 
 
 
@@ -391,22 +375,6 @@ frame drop wideframe
 }
 cwf `originalframe'
 
-/*
-xtdidregress (`depvar') (`treated'), group(`panel') time(`time')
-
-if "`placebo'" == "" {
-	
-	ereturn scalar DDLB = r(table)[5,1]
-	ereturn scalar DDUB = r(table)[6,1]
-}
-
-else {
-qui sdid_event `depvar' `panel' `time' `treated', method(did) brep(500)
-
-ereturn scalar DDLB = e(H)[1,3]
-ereturn scalar DDUB = e(H)[1,4]
-}
-*/
 cap frame drop `defname'
 cap frame drop multiframe
 end
@@ -714,6 +682,8 @@ scalar `max_r2' = 0
 
 
 		loc r2 = 1 - (`RSS' / `TSS')
+		
+
 
 
 		    
@@ -724,6 +694,8 @@ scalar `max_r2' = 0
 			local new_U `var'
 			
 		    }
+		    
+		    
 		    
 		    // Here we determine which unit's values maximize the r2.
 		    
@@ -817,7 +789,7 @@ qui summarize `tss'
 local TSS = r(sum)
 
 
-qui foreach x of loc U {
+foreach x of loc U {
 tempname cfiter	
 	* Drop previous variables
 	
@@ -844,8 +816,7 @@ tempname cfiter
 	local RSS = r(sum)
 
 	* Calculate and display R-squared
-	loc r2 = 1 - (`RSS' / `TSS')
-
+	loc r2 = 1 - (`RSS' / `TSS')	
     
 	* Check if the current R-squared is the highest
 	if (`r2' > `best_r2') {
@@ -905,7 +876,6 @@ egen ymeanfdid = rowmean(`best_model')
 
 
 // And estimate DID again.
-
 * Define the constraint
 constraint define 1 ymeanfdid = 1
 
