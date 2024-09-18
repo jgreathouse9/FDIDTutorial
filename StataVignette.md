@@ -22,14 +22,14 @@ u "hcw.dta", clear
 Here, we study the impact of Hong Kong's [economic integreation](https://www.henleyglobal.com/residence-investment/hong-kong/cepa-hong-kong-china). We have 44 pretreatment periods and 17 post-treatment periods. Our goal is to estimate the impact for those final 17 periods. To estimate ```fdid```, we simply do
 ```stata
 fdid gdp, tr(treat) unitnames(state) ///
-gr1opts(scheme(plottig) ti(Forward DID Analysis) /// using plottig: https://www.stata.com/meeting/switzerland16/slides/bischof-switzerland16.pdf
-yti(GDP Growth) note(Treatment is Economic Integration with Mainland China) legend(order(1 "Hong Kong" 2 "FDID Counterfactual") pos(12)))
+gr1opts(scheme(sj) ti(Forward DID Analysis) ///
+yti(GDP Growth) ///
+note(Treatment is Economic Integration with Mainland China) ///
+legend(order(1 "Hong Kong" 2 "FDID Counterfactual") pos(12)))
 ```
 We specify the outcome of interest as ```gdp``` and we specify the treatment as ```treat```. We use the strings of the ```state``` variable to define the names of our units. This syntax produces the table
 ```stata
-
-Forward Difference-in-Differences          T0 R2:  0.84278     T0 RMSE:  0.01638
-
+Forward Difference-in-Differences   |    T0 R2: 0.843  T0 RMSE: 0.016
 -----------------------------------------------------------------------------
          gdp |     ATT     Std. Err.     t      P>|t|    [95% Conf. Interval]
 -------------+---------------------------------------------------------------
@@ -50,26 +50,6 @@ If we wish to see the returned results, we can do
 
 ereturn list
 
-
-
-scalars:
-                 e(T1) =  44
-                 e(T0) =  45
-                 e(T2) =  17
-                  e(T) =  61
-                 e(r2) =  .8428
-               e(DDr2) =  .5046
-               e(rmse) =  .0164
-                e(N0U) =  9
-              e(DDATT) =  .0317
-             e(pDDATT) =  77.6203
-               e(pATT) =  53.8431
-               e(CILB) =  .0163
-                e(ATT) =  .0254
-               e(CIUB) =  .0345
-                 e(se) =  .0046
-              e(tstat) =  5.49
-
 macros:
                   e(U) : "philippines, singapore, thailand, norway, mexico, korea, indonesia, newzealand, malaysia,"
          e(properties) : "b V"
@@ -79,22 +59,23 @@ matrices:
                   e(b) :  1 x 1
                   e(V) :  1 x 1
              e(series) :  61 x 9
-            e(results) :  1 x 8
+            e(setting) :  1 x 6
+            e(results) :  2 x 7
+             e(dyneff) :  61 x 6
 
 ```
-The ```e(series)``` is a matrix containing the observed and counterfactual values, event time, individual treatment effects. Naturally, the other statistics pertain to the total number of controls, the number of controls selected, as well as inferential statistics. Note that the fact we have a sparse control group selected (i.e., we didn't select 20 controls) demonstrates the effectiveness of choosing a much smaller subset of controls
+The ```e(series)``` is a matrix containing the observed and counterfactual values, event time, individual treatment effects. Naturally, the other statistics pertain to the total number of controls, the number of controls selected, as well as inferential statistics. 
 
-The results themselves can also be conveniently accessed like
 ```stata
 
 mat l e(results)
 
-
-e(results)[1,8]
-                  ATT       PATT         SE          t         LB         UB         R2       RMSE
-Statistics  .02540494  53.843074  .00462405  5.4940862  .01634196  .03446791   .8427835     .01638
-
+e(results)[2,7]
+            ATT       PATT         SE          t         LB         UB         R2
+FDID  .02540494  53.843074  .00462405  5.4940862  .01634196  .03446791   .8427835
+ DID  .03172116    77.6203  .00298081  10.641796  .02556907  .03787324      .5046
 ```
+Here DID uses the robust standard error as estimated by ```xtdidregress```. We can clearly see that the pre-intervention \(R^2\) for the selected control group of FDID is much higher than the DID method, suggesting that the parallel trends assumption holds.
 
 # Proposition 99
 
@@ -118,51 +99,46 @@ Treated Unit: California
 FDID selects Montana, Colorado, Nevada, Connecticut, as the optimal donors.
 See Li (2024) for technical details.
 ```
-and the plot
+
+With these results, we may produce the plot
+
+```stata
+
+svmat e(series), names(col)
+
+tsset year
+
+lab var cigsale3 "California"
+
+lab var cf3 "FDID"
+lab var cfdd3 "DID"
+
+lab var ymeandid "DID Control Mean"
+lab var ymeanfdid "FDID Control Mean"
+lab var year "Year"
+twoway (tsline cigsale3) ///
+(tsline cfdd3, lcolor(black) lwidth(thick) lpattern(dash)) ///
+(tsline ymeandid, lcolor(black) lwidth(thick) lpattern(solid)), ///
+scheme(sj) name(did, replace) ///
+yti(Cigarette Consumption per Capita) tli(1989) legend(ring(0) pos(7) col(1) size(large)) ///
+ti(Uses all controls)
+
+twoway (tsline cigsale3) ///
+(tsline cf3,lcolor(gs6) lwidth(thick) lpattern(longdash)) ///
+(tsline ymeanfdid, lcolor(gs6) lwidth(thick) lpattern(solid)), ///
+scheme(sj) name(fdid, replace) tli(1989) legend(ring(0) pos(7) col(1) size(large)) ///
+ti(Uses 4 controls)
+
+
+graph combine did fdid, xsize(8)
+
+```
+
 <p align="center">
   <img src="FDIDP99Update.png" alt="Alt Text">
 </p>
 
-We can prove that the same result is given in Stata's native ```xtdidregress```
-
-```stata
-xtdidregress (cigsale) (treated), group(id) time(year)
-```
-which returns
-```stata
-Number of groups and treatment time
-
-Time variable: year
-Control:       treated = 0
-Treatment:     treated = 1
------------------------------------
-             |   Control  Treatment
--------------+---------------------
-Group        |
-          id |        38          1
--------------+---------------------
-Time         |
-     Minimum |      1970       1989
-     Maximum |      1970       1989
------------------------------------
-
-Difference-in-differences regression                     Number of obs = 1,209
-Data type: Longitudinal
-
-                                    (Std. err. adjusted for 39 clusters in id)
-------------------------------------------------------------------------------
-             |               Robust
-     cigsale | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
--------------+----------------------------------------------------------------
-ATET         |
-     treated |
-   (1 vs 0)  |  -27.34911   2.802378    -9.76   0.000    -33.02223   -21.67599
-------------------------------------------------------------------------------
-Note: ATET estimate adjusted for panel effects and time effects.
-```
-We get the exact same result as I did in terms of the ATT. I don't compute the standard errors for ```fdid```, but these are by default cluster robust standard errors for ```xtdidregress```. Either way, we can see that the normal DID method has wider confidence intervals than FDID, having a width of 11.346 compared to ```fdid```'s width of 1.8.
-
-As of July 22, 2024, I now plot the DID results by default so people can see how exactly DID compares to FDID. Next, I'll just quote [my notes](https://jgreathouse9.github.io/GSUmetricspolicy/treatmenteffects.html):
+I'll just quote [my notes](https://jgreathouse9.github.io/GSUmetricspolicy/treatmenteffects.html):
 
 > The DID counterfactual underpredicts the true values for California in the pre-intervention period from around 1970 to 1975. Beyond this, it also overestimates the observed California’s values between 1980 and 1988. This is particularly bad because if your predictions diverge significantly from the treated unit’s observed values in the years right before the intervention takes place, why would we think that the post-intervention smoking consumption predictions are valid?
 
