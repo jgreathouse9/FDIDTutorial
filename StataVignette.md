@@ -1,6 +1,6 @@
 # ```fdid``` for Stata Users
 
-I've already covered the basics of the algorithm in [the Python vignette](https://github.com/jgreathouse9/FDIDTutorial/blob/main/Vignette.md), so I will not repeat myself regarding the basic algorithm and theory. This note simply demonstrates how to use FDID for Stata 16 and up. No special commands are needed to use ```fdid```.
+I've already covered the basics of the algorithm in [the Python vignette](https://github.com/jgreathouse9/FDIDTutorial/blob/main/Vignette.md), so I will not repeat myself regarding the basic algorithm. This note simply demonstrates how to use FDID for Stata 16 and up. Users need ```sdid_event``` to be [installed](https://github.com/DiegoCiccia/sdid/tree/main/sdid_event#github).
 
 First we install ```fdid``` and its help file into Stata like
 
