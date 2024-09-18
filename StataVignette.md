@@ -82,9 +82,14 @@ Here DID uses the robust standard error as estimated by ```xtdidregress```. We c
 Next, I'd like to replicate one of the more classic papers in synthetic control methods, the case of Proposition 99 for California. Prop 99 was an anti-tobacco campaign that sought to reduce the rate of smoking in the population via education, awareness, and taxation. To run this, we do
 
 ```stata
-qui u smoking, clear
 
-fdid cigsale, tr(treated) unitnames(state) gr1opts(scheme(sj) name(p99, replace))
+clear *
+
+u "smoking.dta", clear
+
+cls
+
+fdid cigsale, tr(treated) unitnames(state)
 ```
 which returns the table
 ```stata
