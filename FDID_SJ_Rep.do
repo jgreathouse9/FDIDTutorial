@@ -8,44 +8,51 @@ net install fdid, replace
 
 net get fdid, replace
 
-
 u smoking, clear
 
-fdid cigsale, tr(treated) unitnames(state)
+fdid cigsale, treated(treat) unitnames(state)
 
-// Making the First Plot
+mkf newframe
 
-mkf resultframe
-cwf resultframe
+cwf newframe
 
 svmat e(series), names(col)
 
-tsset year
+cls
+twoway (connected cigsale3 year, mcolor(black) msize(small) msymbol(smcircle) lcolor(black) lwidth(medthick)) ///
+	(connected cfdd3 year, mcolor(gs11) msize(small) msymbol(smsquare) lcolor(gs11) lpattern(solid) lwidth(thin)) ///
+	(connected ymeandid3 year, mcolor(gs11) msize(small) msymbol(smtriangle) lcolor(gs11) lwidth(thin)), ///
+	ylabel(#10, grid glwidth(vthin) glcolor(gs8%20) glpattern(dash)) ///
+	xline(1989, lwidth(medium) lpattern(solid) lcolor(black)) ///
+	xlabel(#10, grid glwidth(vthin) glcolor(gs8%20) glpattern(dash)) ///
+	legend(cols(1) ///
+	position(9) ///
+	order(1 "California" 2 "DID Prediction" 3 "DID y{subscript:N{subscript:co}} Mean") ///
+	region(fcolor(none) lcolor(none)) ring(0)) ///
+	scheme(sj) ///
+	graphregion(fcolor(white) lcolor(white) ifcolor(white) ilcolor(white)) ///
+	plotregion(fcolor(white) lcolor(white) ifcolor(white) ilcolor(white)) ///
+	name(did, replace) yti(Cigarette Sales) ti("All Controls")
 
-lab var cigsale3 "California"
-
-lab var cf3 "FDID"
-lab var cfdd3 "DID"
-
-lab var ymeandid "DID Control Mean"
-lab var ymeanfdid "FDID Control Mean"
-lab var year "Year"
-twoway (tsline cigsale3) ///
-(tsline cfdd3, lcolor(black) lwidth(thick) lpattern(dash)) ///
-(tsline ymeandid, lcolor(black) lwidth(thick) lpattern(solid)), ///
-scheme(sj) name(did, replace) ///
-yti(Cigarette Consumption per Capita) tli(1989) legend(ring(0) pos(7) col(1) size(large)) ///
-ti(Uses all controls)
-
-twoway (tsline cigsale3) ///
-(tsline cf3,lcolor(gs6) lwidth(thick) lpattern(longdash)) ///
-(tsline ymeanfdid, lcolor(gs6) lwidth(thick) lpattern(solid)), ///
-scheme(sj) name(fdid, replace) tli(1989) legend(ring(0) pos(7) col(1) size(large)) ///
-ti(Uses 4 controls)
-
-
-graph combine did fdid, xsize(8)
-graph export "FDIDP99.png", as(png) name("Graph") replace
+twoway (connected cigsale3 year, mcolor(black) msize(small) msymbol(smcircle) lcolor(black) lwidth(medthick)) ///
+	(connected cf3 year, mcolor(gs11) msize(small) msymbol(smsquare) lcolor(gs11) lpattern(solid) lwidth(thin)) ///
+	(connected ymeanfdid year, mcolor(gs11) msize(small) msymbol(smtriangle) lcolor(gs11) lwidth(thin)), ///
+	ylabel(#10, grid glwidth(vthin) glcolor(gs8%20) glpattern(dash)) ///
+	xline(1989, lwidth(medium) lpattern(solid) lcolor(black)) ///
+	xlabel(#10, grid glwidth(vthin) glcolor(gs8%20) glpattern(dash)) ///
+	legend(cols(1) ///
+	position(9) ///
+	order(1 "California" 2 "FDID Prediction" 3 "FDID y{subscript:N{subscript:co}} Mean") ///
+	region(fcolor(none) lcolor(none)) ring(0)) ///
+	scheme(sj) ///
+	graphregion(fcolor(white) lcolor(white) ifcolor(white) ilcolor(white)) ///
+	plotregion(fcolor(white) lcolor(white) ifcolor(white) ilcolor(white)) name(fdid, replace) ti("FDID Controls")
+	
+	graph combine did fdid, ///
+	xsize(9) ///
+	ysize(4.5) //
+	
+	graph export "FDIDP99.png", as(png) name("Graph") replace
 
 qui log close
 
