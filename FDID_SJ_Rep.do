@@ -3,7 +3,10 @@ log using fdidlog.log, replace
 
 clear *
 
+* Users Need sdid_event: https://github.com/Daniel-Pailanir/sdid/tree/main/sdid_event
+
 net from "https://raw.githubusercontent.com/jgreathouse9/FDIDTutorial/main"
+
 net install fdid, replace
 
 net get fdid, replace
