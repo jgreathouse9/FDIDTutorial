@@ -1,4 +1,5 @@
-*!version 1.0.1  12Sep2024
+*!version 1.0.2  27Sep2024
+// Optimizes the forward selection algorithm, thanks to Andrew Musau and Daniel Klein
 *! requires sdid and sdid_event
 *! Jared Greathouse
 
@@ -377,6 +378,7 @@ cwf `originalframe'
 
 cap frame drop `defname'
 cap frame drop multiframe
+return clear
 end
 
 /**********************************************************
@@ -568,15 +570,15 @@ drop `treatment'
 
 else {
 	
-	
 	qui sdid_event `outcome' `panel' `time' `treatment', method(did) brep(500) placebo(all)
 	
 	loc ddse = e(H)[1,2]
 	loc DDATT = e(H)[1,1]
 	
-	loc DDLB = `DDATT' - (((invnormal(0.975) * `ddse')))
-loc DDUB = `DDATT' + (((invnormal(0.975) * `ddse')))
-
+	loc DDLB = e(H)[1,3]
+	
+	
+loc DDUB = e(H)[1,4]
 loc DDT= abs(`DDATT'/`ddse')
 
 drop `treatment'
@@ -620,7 +622,7 @@ local U
 // We use the mean of the y control units as our predictor in DID regression.
 // cfp= counterfactual predictions, used to calculate the R2/fit metrics.
 
-tempvar ym cfp
+tempvar ym cfp ymeandid
 
 
 // Here is the placeholder for max r2.
@@ -633,199 +635,122 @@ qui summarize `treated_unit'
 local mean_observed = r(mean)
     
 * Calculate the Total Sum of Squares (TSS)
-qui generate double tss = (`treated_unit' - `mean_observed')^2
+qui generate double tss = (`treated_unit' - `mean_observed')^2 if `time' < `interdate'
 qui summarize tss
-local TSS = r(sum) 
-
-while ("`predictors'" != "") {
-
-scalar `max_r2' = 0
-
-	foreach var of local predictors {
-	
-	// Drops these, as we need them for each R2 calculation
-	
-	cap drop rss
-	cap drop tss
-
-		 {
-			
-		// We take the mean of each element of set U and each new predictor.
-			
-		    
-		 egen `ym' = rowmean(`U' `var')
-		    
-		 // The coefficient for the control average has to be 1.
-		    
-		 constraint 1 `ym' = 1
-		    
-		 // We use constrained OLS for this purpose.
-		    
-		 * 45 is the treatment date for HongKong, but this will be
-		 * any date as specified by the treat variable input by the
-		 * user.
-		 
-		    
-		qui cnsreg `outcome'`trnum' `ym' if `time' < `interdate' , constraint(1)
-		    
-		// We predict our counterfactual
-		    
-		qui predict `cfp' if e(sample)
-		
-		// Now we calculate the pre-intervention R2 statistic.
+local TSS = r(sum)
 
 
-		* Calculate the Residual Sum of Squares (RSS)
-		qui generate double rss = (`treated_unit' - `cfp')^2
-		qui summarize rss
-		local RSS = r(sum)
+egen `ymeandid'= rowmean(`predictors')
+
+constraint 1 `ymeandid' = 1
+ 
+    
+qui cnsreg `treated_unit' `ymeandid' if `time' < `interdate' , constraint(1)
+    
+// We predict our counterfactual
+    
+qui predict cfdd`trnum'
+
+// Now we calculate the pre-intervention R2 statistic.
 
 
-		loc r2 = 1 - (`RSS' / `TSS')
-		
+* Calculate the Residual Sum of Squares (RSS)
+qui generate double rss = (`treated_unit' - cfdd`trnum')^2 if `time' < `interdate'
+qui summarize rss
+local RSS = r(sum)
+
+clonevar ymeandid`trnum' = `ymeandid'
+
+scalar DDr2 = 1 - (`RSS' / `TSS') 
+
+// Forward Selection Algorithm ...
+
+local r2max 0
+qui while ("`predictors'" != "") {
+scalar `max_r2' = -99999999999
+
+
+    foreach var of local predictors {
+    
+    // Drops these, as we need them for each R2 calculation
+    
+    cap drop rss
+
+         {
+            
+        // We take the mean of each element of set U and each new predictor.
+            
+            
+         egen `ym' = rowmean(`U' `var')
+            
+         // The coefficient for the control average has to be 1.
+            
+         constraint 1 `ym' = 1
+         
+            
+        qui cnsreg `treated_unit' `ym' if `time' < `interdate' , constraint(1)
+            
+        // We predict our counterfactual
+            
+        qui predict `cfp' if e(sample)
+        
+        // Now we calculate the pre-intervention R2 statistic.
+
+
+        * Calculate the Residual Sum of Squares (RSS)
+        qui generate double rss = (`treated_unit' - `cfp')^2 if e(sample)
+        qui summarize rss
+        local RSS = r(sum)
+
+
+        loc r2 = 1 - (`RSS' / `TSS')
+        
+        
 
 
 
-		    
-		    if `r2' > scalar(`max_r2') {
-		    	
-			
-			scalar `max_r2' = `r2'
-			local new_U `var'
-			
-		    }
-		    
-		    
-		    
-		    // Here we determine which unit's values maximize the r2.
-		    
-		    drop `ym'
-		    drop `cfp'
-		    
-		    // We get rid of these now as they've served their purpose.
-		    
-		}
+            
+            if `r2' > scalar(`max_r2') {
+                
+            
+            scalar `max_r2' = `r2'
+            local new_U `var'
 
-		}
+            
+            }
+            
+            
+            
+            // Here we determine which unit's values maximize the r2.
+            
+            drop `ym'
+            drop `cfp'
+            
+            // We get rid of these now as they've served their purpose.
+            
+        }
 
-		
-	local U `U' `new_U' // We add the newly selected unit to U.
-	
-	// and get rid of it from the predictors list.
+        }
 
-	local predictors : list predictors - new_U
-	
-	    if `r2' < 0 {
-	    	
-
-
-        continue, break
+        
+    local U `U' `new_U' // We add the newly selected unit to U.
+        
+    if scalar(`max_r2')>`r2max'{
+        local r2max= scalar(`max_r2')
+        local best_model = "`U'"
     }
+    
+    // and get rid of it from the predictors list.
+    
+    local predictors : list predictors - new_U
 
 }
 
 
-// we don't need to, but I put time first.
-
-order `time', first
-
-order `U', a(`treated_unit')
-
-// Now we have the set of units sorted in the order of which maximizes the R2
-// For each subsequent sub-DID estimation
-
-
-* Now that we have them in order, we start with the first unit, estimate DID, and calculate
-* the R2 statistic. We then in succession add the next best unit, and the next best one...
-* until we have estimated N0 DID models. We wish to get the model which maximizes R2.
-
-tempvar ymean rss tss
-
-egen ymeandid = rowmean(`U')
-
-
-constraint define 1 ymeandid = 1
-
-
-qui cnsreg `treated_unit' ymeandid if `time' < `interdate', constraints(1)
-
-qui predict cfdd`trnum'
-
-* Calculate the mean of observed values
-qui summarize `treated_unit' if `time' < `interdate'
-local mean_observed = r(mean)
-
-* Calculate the Total Sum of Squares (TSS)
-qui generate double `tss' = (`treated_unit' - `mean_observed')^2 if `time' < `interdate'
-qui summarize `tss' if `time' < `interdate'
-local TSS = r(sum)
-
-* Calculate the Residual Sum of Squares (RSS)
-qui generate double `rss' = (`treated_unit' - cfdd`trnum')^2 if `time' < `interdate'
-qui summarize `rss' if `time' < `interdate'
-local RSS = r(sum)
-
-* Calculate and display R-squared
-loc r2dd = 1 - (`RSS' / `TSS')
-
-scalar DDr2 = `r2dd'
-	
-
-* Initialize an empty local to build the variable list
-
-local varlist
-local best_r2 = -1
-local best_model = ""
-
-* Loop through each variable in the list
-
-* Calculate the mean of observed values
-qui summarize `treated_unit'
-local mean_observed = r(mean)
-tempvar tss
-* Calculate the Total Sum of Squares (TSS)
-qui generate double `tss' = (`treated_unit' - `mean_observed')^2
-qui summarize `tss'
-local TSS = r(sum)
-
-
-foreach x of loc U {
-tempname cfiter	
-	* Drop previous variables
-	
-	cap drop cfiter
-	cap drop ymeaniter 
-	tempvar rss
-	* Add the current variable to the list
-	local varlist `varlist' `x'
-
-
-	egen ymeaniter = rowmean(`varlist')
-
-
-	constraint define 1 ymeaniter = 1
-
-
-	qui cnsreg `treated_unit' ymeaniter if `time' < `interdate', constraints(1)
-
-	qui predict `cfiter' if e(sample)
-
-	* Calculate the Residual Sum of Squares (RSS)
-	qui generate double `rss' = (`treated_unit' - `cfiter')^2
-	qui summarize `rss'
-	local RSS = r(sum)
-
-	* Calculate and display R-squared
-	loc r2 = 1 - (`RSS' / `TSS')	
-    
-	* Check if the current R-squared is the highest
-	if (`r2' > `best_r2') {
-		local best_r2 = `r2'
-		local best_model = "`varlist'"
-	}
-} // end of Forward Selection
-
 cwf `cfframe'
+
+//di "`best_model'"
+
 
 qui frlink 1:1 `time', frame(`__reshape')
 
@@ -844,6 +769,10 @@ loc post = r(N)
 qui xtset id `time'
 
 qui sdid_event `outcome' id `time' treat, method(did) brep(500) placebo(all)
+if "`placebo'" == "placebo" {
+loc DDLB = e(H)[1,3]
+loc DDUB = e(H)[1,4]
+}
 loc  plase= e(H)[1,2]
 local row `= rowsof(e(H))' 
 
@@ -949,12 +878,21 @@ loc grname name(`fitname_cleaned', replace)
 	
 }
 
-twoway (line `treated_unit' `time', lcol(black) lwidth(medthick) lpat(solid)) ///
-(line cf`trnum' `time', lpat(solid) lwidth(thin) lcol(black)) ///
-(line cfdd`trnum' `time', lpat(shortdash) lwidth(medthick) lcol(gs8)), ///
-yti("`treatst' `outlab'") ///
-legend(order(1 "Observed" 2 "FDID" 3 "DD")) ///
-xli(`interdate', lcol(gs6) lpat(--)) `grname' `gr1opts'
+twoway (line `treated_unit' `time', ///
+		lcolor(black) lwidth(medthick)) ///
+	(connected cf`trnum' `time', ///
+		mcolor(gs11) msize(small) msymbol(smsquare) lcolor(gs11) lpattern(solid) lwidth(thin)) ///
+	(connected cfdd`trnum' `time', ///
+	mcolor(black) msize(small) msymbol(smcircle) lcolor(black) lwidth(thin)), ///
+		ylabel(#5, grid glwidth(vthin) glcolor(gs4%20) glpattern(dash)) ///
+		xline(`interdate', lwidth(medium) lpattern(solid) lcolor(black)) ///
+		xlabel(#10, grid glwidth(vthin) glcolor(gs4%20) glpattern(dash)) ///
+		legend(region(lcolor(none)) order(1 "Observed" 2 "FDID" 3 "DD") cols(1) position(3)) ///
+		xsize(7.5) ///
+		ysize(4.5) ///
+		graphregion(fcolor(white) lcolor(white) ifcolor(white) ilcolor(white)) ///
+		plotregion(fcolor(white) lcolor(white) ifcolor(white) ilcolor(white)) ///
+		yti("`treatst' `outlab'") `grname' `gr1opts'
 
 }
 
@@ -1044,19 +982,21 @@ scalar pATT =  100*scalar(ATT)/r(mean)
 
 if  "`placebo'"== "placebo" {
 scalar SE = `plase'
-	
+scalar CILB = `DDLB'
+scalar CIUB =  `DDUB'	
 	
 }
 
 else {
 
 scalar SE = scalar(ohat)/sqrt(scalar(t2))
-}
+
 
 
 scalar CILB = scalar(ATT) - (((invnormal(0.975) * scalar(SE))))
 
 scalar CIUB =  scalar(ATT) + (((invnormal(0.975) * scalar(SE))))
+}
 qui su cfdd`trnum' if eventtime`trnum' >=0 
 
 scalar pATTDD =  100*`DDATT'/r(mean)
@@ -1095,12 +1035,19 @@ loc grname name(`fitname_cleaned', replace)
 }
 
 frame `newframe2' {
-        twoway (rcap  lb ub eventtime, fcolor(gs7%50) lcolor(gs7%50)) ///
+	
+	twoway (rcap  lb ub eventtime, fcolor(gs7%50) lcolor(gs7%50)) ///
 	(scatter eff eventtime, mc(black) ms(d) msize(*.5)), ///
-	legend(off) ///
-	title(Dynamic Effects) xtitle("t-`=ustrunescape("\u2113")' until Treatment") ///
-	ytitle(Pointwise Effect) ///
-	yline(0,lc(gs5) lp(-)) xline(0, lc(black) lp(solid))  `grname' `gr2opts'
+		ylabel(#5, grid glwidth(vthin) glcolor(gs4%20) glpattern(dash)) ///
+		xline(0, lwidth(medium) lpattern(solid) lcolor(black)) ///
+		yline(0, lwidth(medium) lpattern(solid) lcolor(black)) ///
+		xlabel(#10, grid glwidth(vthin) glcolor(gs4%20) glpattern(dash)) ///
+		legend(region(lcolor(none)) order(1 "95% CI" 2 "Treatment Effect") cols(1) position(3)) ///
+		xsize(7.5) ///
+		ysize(4.5) ///
+		graphregion(fcolor(white) lcolor(white) ifcolor(white) ilcolor(white)) ///
+		plotregion(fcolor(white) lcolor(white) ifcolor(white) ilcolor(white)) ///
+		yti({&tau}) xti(t-`=ustrunescape("\u2113")' until Treatment) (treatment effect)) `grname' `gr2opts'
 	}
 }
 qui keep eventtime`trnum' `time' `treated_unit' cf`trnum' cfdd`trnum' te`trnum' ddte`trnum' ymeanfdid`trnum' ymeandid`trnum' //ci_top`trnum' ci_bottom`trnum'
