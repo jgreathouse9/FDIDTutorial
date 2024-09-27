@@ -1048,7 +1048,7 @@ frame `newframe2' {
 		ysize(4.5) ///
 		graphregion(fcolor(white) lcolor(white) ifcolor(white) ilcolor(white)) ///
 		plotregion(fcolor(white) lcolor(white) ifcolor(white) ilcolor(white)) ///
-		yti("{&tau} (treatment effect)") xti(t-`=ustrunescape("\u2113")' until Treatment)) `grname' `gr2opts'
+		yti("{&tau} (treatment effect)") xti(t-`=ustrunescape("\u2113")' until Treatment) `grname' `gr2opts'
 	}
 }
 qui keep eventtime`trnum' `time' `treated_unit' cf`trnum' cfdd`trnum' te`trnum' ddte`trnum' ymeanfdid`trnum' ymeandid`trnum' //ci_top`trnum' ci_bottom`trnum'
