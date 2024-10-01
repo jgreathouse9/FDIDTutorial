@@ -26,10 +26,13 @@ Basically, ```fdid``` uses a forward selection algorithm to choose the optimal c
 
 
 We estimate FDID like
-$$
-y\_{1t}=\hat\alpha\_{\widehat{U}}+ \bar{y}\_{\widehat{U}t} \quad t \in \mathcal{T}\_1
-\label{eq:DiD}
-$$
+
+```math
+\begin{equation}
+y_{1t}=\hat\alpha_{\widehat{U}}+ \bar{y}_{\widehat{U}t} \quad t \in \mathcal{T}_1
+\end{equation}
+```
+
 where we now exchange $\mathcal{N}\_0$ for $\widehat{U}$. Denote the FDID predictions as $\hat{y}\_{1t}^{0}=\hat\alpha\_{\widehat{U}}+ \bar{y}\_{\widehat{U}t}$, where the pre-treatment periods corresponds to the in-sample fit and the opposite denotes the out-of-sample counterfactual. Our causal estimand is: $\widehat{ATT}\_{\widehat{U}} = \frac{1}{T\_2} \sum\_{t \in \mathcal{T}\_2} \left(y\_{1t} - \hat{y}\_{1t}^0\right)$, or the average treatment effect on the treated. 
 
 # HCW
