@@ -995,9 +995,9 @@ scalar SE = scalar(ohat)/sqrt(scalar(t2))
 
 
 
-scalar CILB = scalar(ATT) - (((invnormal(0.975) * scalar(SE))))
+loc FDDLB = scalar(ATT) - (((invnormal(0.975) * scalar(SE))))
 
-scalar CIUB =  scalar(ATT) + (((invnormal(0.975) * scalar(SE))))
+loc  FDDUB =  scalar(ATT) + (((invnormal(0.975) * scalar(SE))))
 }
 qui su cfdd`trnum' if eventtime`trnum' >=0 
 
@@ -1118,7 +1118,7 @@ di as res "`tabletitle'{c |}   "      " " "T0 R2: " %5.3f scalar(r2) "  T0 RMSE:
 di as text "{hline 13}{c TT}{hline 63}"
 di as text %12s abbrev("`outcome'",12) " {c |}     ATT     Std. Err.     t      P>|t|    [95% Conf. Interval]" 
 di as text "{hline 13}{c +}{hline 63}"
-di as text %12s abbrev("`treatment'",12) " {c |} " as result %9.5f scalar(ATT) "  " %9.5f scalar(SE) %9.2f scalar(tstat) %9.3f scalar(p_value) "   " %9.5f scalar(CILB) "   " %9.5f scalar(CIUB)
+di as text %12s abbrev("`treatment'",12) " {c |} " as result %9.5f scalar(ATT) "  " %9.5f scalar(SE) %9.2f scalar(tstat) %9.3f scalar(p_value) "   " %9.5f `FDDLB' "   " %9.5f `FDDUB'
 di as text "{hline 13}{c BT}{hline 63}"
 * Display the footer information
 di as text "Treated Unit: `treatst'"
