@@ -667,7 +667,8 @@ scalar DDr2 = 1 - (`RSS' / `TSS')
 // Forward Selection Algorithm ...
 
 local r2max 0
-qui while ("`predictors'" != "") {
+while ("`predictors'" != "") {
+
 scalar `max_r2' = -99999999999
 
 
@@ -771,8 +772,8 @@ qui xtset id `time'
 
 qui sdid_event `outcome' id `time' treat, method(did) brep(500) placebo(all)
 if "`placebo'" == "placebo" {
-loc DDLB = e(H)[1,3]
-loc DDUB = e(H)[1,4]
+loc FDDLB = e(H)[1,3]
+loc FDDUB = e(H)[1,4]
 }
 loc  plase= e(H)[1,2]
 local row `= rowsof(e(H))' 
@@ -1061,7 +1062,7 @@ qui su ddte`trnum' if eventtime`trnum' < 0, mean
 loc DDRMSE = sqrt(r(mean))
 
 tempname my_matrix my_matrix2
-matrix `my_matrix' = (scalar(ATT), scalar(pATT), scalar(SE), scalar(tstat), scalar(CILB), scalar(CIUB), scalar(r2))
+matrix `my_matrix' = (scalar(ATT), scalar(pATT), scalar(SE), scalar(tstat), `FDDLB', `FDDUB', scalar(r2))
 matrix `my_matrix2' = (`DDATT', round(scalar(pATTDD), 0.0001), `ddse', abs(`DDT'), `DDLB', `DDUB', round(scalar(DDr2), 0.0001))
 matrix colnames `my_matrix' = ATT PATT SE t LB UB R2
 
