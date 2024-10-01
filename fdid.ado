@@ -632,12 +632,12 @@ tempname max_r2
 
 // Forward Selection Algorithm ...
   
-qui summarize `treated_unit'
+qui summarize `treated_unit' if `time' < `interdate'
 local mean_observed = r(mean)
     
 * Calculate the Total Sum of Squares (TSS)
 qui generate double tss = (`treated_unit' - `mean_observed')^2 if `time' < `interdate'
-qui summarize tss
+qui summarize tss if `time' < `interdate' 
 local TSS = r(sum)
 
 
@@ -657,7 +657,7 @@ qui predict cfdd`trnum'
 
 * Calculate the Residual Sum of Squares (RSS)
 qui generate double rss = (`treated_unit' - cfdd`trnum')^2 if `time' < `interdate'
-qui summarize rss
+qui summarize rss if `time' < `interdate'
 local RSS = r(sum)
 
 clonevar ymeandid`trnum' = `ymeandid'
@@ -706,11 +706,6 @@ scalar `max_r2' = -99999999999
 
 
         loc r2 = 1 - (`RSS' / `TSS')
-        
-        
-
-
-
             
             if `r2' > scalar(`max_r2') {
                 
