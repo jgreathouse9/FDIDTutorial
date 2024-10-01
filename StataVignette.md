@@ -1,6 +1,6 @@
 # ```fdid``` for Stata Users
 
-I've already covered the basics of the algorithm in [the Python vignette](https://github.com/jgreathouse9/FDIDTutorial/blob/main/Vignette.md), so I will not repeat myself regarding the basic algorithm. This note simply demonstrates how to use FDID for Stata 16 and up. Users need ```sdid_event``` to be [installed](https://github.com/DiegoCiccia/sdid/tree/main/sdid_event#github).
+Here, I cover the forward selection difference-in-differences method for Stata. Note that I already do the equivalent in [the Python vignette](https://github.com/jgreathouse9/FDIDTutorial/blob/main/Vignette.md). So, I will but briefly restate the algorithm and the basic ideas. For the more technical treatment, see [my paper](https://jgreathouse9.github.io/publications/FDIDSJ.pdf). This vignette demonstrates how to use FDID for Stata 16 and up. Users need ```sdid_event``` to be [installed](https://github.com/DiegoCiccia/sdid/tree/main/sdid_event#github).
 
 First we install ```fdid``` and its help file into Stata like
 
@@ -11,6 +11,12 @@ We can get the datasets I include like
 ```stata
 net get fdid, all
 ```
+
+# The Algorithm
+
+Basically, ```fdid``` uses a forward selection algorithm to choose the optimal control group for a single treated unit.  We observe \(\mathcal{N} = \{1, 2, \ldots, N\}\) units where $\mathcal N$ has cardinality \(N = |\mathcal{N}|\). $j=1$ is treated and controls are $ \mathcal{N}\_0 = \mathcal{N} \setminus \{1\}$. Time is indexed by \(t\). Denote pre-post-policy periods as \(\mathcal{T}\_1 = \{1, 2, \ldots, T\_0\}\) and \(\mathcal{T}\_2 = \{T\_0+1, \ldots, T\}\), where $\mathcal{T}= \mathcal{T}\_1 \cup \mathcal{T}\_2$. The subset of controls we wish to select are $\widehat{U} \subset \mathcal{N}\_0$, or the subset of controls. DiD is estimated like $y_{1t}=\hat\alpha_{\mathcal{N}\_0}+ \bar{y}\_{\mathcal{N}\_0t} \: t \in \mathcal{T}\_1$, where $\bar{y}\_{\mathcal{N}\_0t}\coloneqq \frac{1}{N\_0} \sum_{j \in \mathcal{N}_0} y_{jt}$. The estimated least-squares intercept is computed like $\hat\alpha_{\mathcal{N}\_0} \coloneqq T_{1}^{-1}\sum_{t \in \mathcal{T}\_{1}}\left(y_{1t}-\bar{y}_{\mathcal{N}_0t}\right)$.
+
+
 # HCW
 
 The one we're replicating here is [the HCW dataset](https://doi.org/10.1002/jae.1230). We begin by importing the data
