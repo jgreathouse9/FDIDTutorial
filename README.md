@@ -6,7 +6,7 @@ net install fdid, from("https://raw.githubusercontent.com/jgreathouse9/FDIDTutor
 ```
 where you may find the ancillary files with the Basque and HCW data. The vignette for Stata is [here](https://github.com/jgreathouse9/FDIDTutorial/blob/main/StataVignette.md).
 
-- As of 8/11/2024, the Stata version reports Cohort ATTs and inference statistics, however its development is under construction. So, while users may do
+- As of 8/11/2024, the Stata version reports Cohort ATTs, however this development is under construction. So, while users may do
 
 ```stata
 net from "https://raw.githubusercontent.com/jgreathouse9/FDIDTutorial/main"
