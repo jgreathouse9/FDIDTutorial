@@ -21,7 +21,7 @@ replace treat = 1 if id==12 & year >=1976
 cls
 // Estimate FDID
 fdid gdpcap, tr(treat)
-mat l e(SA)
+mat l e(results)
 ```
 
 to obtain the basic results, I'm working on developing event study estimates for this as well. So, discussion of staggered adoption is omitted from the Stata Vignette (I'll also do this for the Python version too, after I send the Stata version to Stata Journal)
