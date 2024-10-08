@@ -2,7 +2,11 @@
 
 Here, I cover the forward selection difference-in-differences method for Stata. Note that I already do the equivalent in [the Python vignette](https://github.com/jgreathouse9/FDIDTutorial/blob/main/Vignette.md). So, I will but briefly restate the algorithm and the basic ideas. For the more technical treatment, see [my paper](https://jgreathouse9.github.io/publications/FDIDSJ.pdf). This vignette demonstrates how to use FDID for Stata 16 and up. Users need ```sdid_event``` to be [installed](https://github.com/DiegoCiccia/sdid/tree/main/sdid_event#github).
 
-First we install ```fdid``` and its help file into Stata like
+```stata
+net install sdid_event, from("https://raw.githubusercontent.com/DiegoCiccia/sdid/main/sdid_event") replace
+```
+
+We install ```fdid``` and its help file into Stata like
 
 ```stata
 net inst fdid, from("https://raw.githubusercontent.com/jgreathouse9/FDIDTutorial/main") replace
