@@ -1113,7 +1113,7 @@ di as res "`tabletitle'{c |}   "      " " "T0 R2: " %5.3f scalar(r2) "  T0 RMSE:
 di as text "{hline 13}{c TT}{hline 63}"
 di as text %12s abbrev("`outcome'",12) " {c |}     ATT     Std. Err.     t      P>|t|    [95% Conf. Interval]" 
 di as text "{hline 13}{c +}{hline 63}"
-di as text %12s abbrev("`treatment'",12) " {c |} " as result %9.5f scalar(ATT) "  " %9.5f scalar(SE) %9.2f scalar(tstat) %9.3f scalar(p_value) "   " %9.5f `FDDLB' "   " %9.5f `FDDUB'
+di as text %12s abbrev("`treatment'",12) " {c |} " as result scalar(ATT) "  " scalar(SE) %9.2f scalar(tstat) %9.3f scalar(p_value) "   " `FDDLB' "   " `FDDUB'
 di as text "{hline 13}{c BT}{hline 63}"
 * Display the footer information
 di as text "Treated Unit: `treatst'"
