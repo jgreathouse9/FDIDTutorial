@@ -96,7 +96,7 @@ _xtstrbal `panel' `time' `touse'
 		[gr1opts(string asis)] [gr2opts(string asis)] ///
 		[unitnames(varlist max=1 string)] [placebo]
 		
-		
+ 		
    /* if unitname specified, grab the label here */
 if "`unitnames'" != "" {
 	qui frame 
@@ -837,6 +837,8 @@ loc yobs = r(mean)
 
 * Here is the plot
 
+set tr off
+
 if ("`gr1opts'" ~= "") {
 
 if "`outlab'"=="" {
@@ -851,14 +853,14 @@ local fitname = "fit" + "`treatst'"
 local fitname_cleaned = subinstr("`fitname'", " ", "", .)
 
 // Define the string
-local myString "`gr1opts'"
+local myString `"`gr1opts'"'
 
 // Check if the word "name" is in the string
-local contains_name = strpos("`myString'", "name")
+local contains_name = strpos(`"`myString'"', "name")
 
 // Return 1 if the string contains the word "name", otherwise return 0
 local namecont = cond(`contains_name' > 0, 1, 0)
-
+di `namecont'
 cap as `namecont'==1
 
 if _rc != 0 {
@@ -1109,7 +1111,7 @@ if `ntr' == 1 {
 di ""
 di ""
 
-di as res "`tabletitle'{c |}   "      " " "T0 R2: " %5.3f scalar(r2) "  T0 RMSE: " %5.3f `RMSE'
+di as res "`tabletitle'{c |}   "      " " "T0 R2: " %5.3f scalar(r2) "  T0 RMSE: " `RMSE'
 di as text "{hline 13}{c TT}{hline 63}"
 di as text %12s abbrev("`outcome'",12) " {c |}     ATT     Std. Err.     t      P>|t|    [95% Conf. Interval]" 
 di as text "{hline 13}{c +}{hline 63}"
